@@ -17,29 +17,144 @@ export type CreateWCDelinquencyBucketFormValues = z.infer<typeof createWCDelinqu
 
 export const createWCLoanProductSchema = z
   .object({
-    name: z.string().min(1, "Name is required").max(100),
+    name: z.string().min(1, "Name is required").max(100, "Max 100 characters"),
     shortName: z.string().min(1, "Short name is required").max(4, "Max 4 characters"),
-    description: z.string().max(500).optional(),
-    currencyCode: z.string().min(1, "Currency is required"),
-    digitsAfterDecimal: z.coerce.number().min(0).default(2),
+    description: z.string().max(500, "Max 500 characters").optional(),
+    externalId: z.string().optional(),
+    fundId: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.number().positive().optional()),
+    startDate: z.string().optional(),
+    closeDate: z.string().optional(),
+    currencyCode: z.string().min(1, "Currency is required").max(3, "Max 3 characters"),
+    digitsAfterDecimal: z.coerce.number().int().min(0).max(6).default(2),
     inMultiplesOf: z.coerce.number().min(0).default(1),
     amortizationType: z.string().default("EIR"),
-    npvDayCount: z.coerce.number().positive("NPV day count must be positive"),
-    principal: z.coerce.number().positive("Principal must be > 0"),
-    minPrincipal: z.preprocess((v) => (v === "" || v === null ? undefined : v), z.coerce.number().optional()),
-    maxPrincipal: z.preprocess((v) => (v === "" || v === null ? undefined : v), z.coerce.number().optional()),
-    periodPaymentRate: z.coerce.number().positive("Period payment rate must be > 0"),
-    minPeriodPaymentRate: z.preprocess((v) => (v === "" || v === null ? undefined : v), z.coerce.number().optional()),
-    maxPeriodPaymentRate: z.preprocess((v) => (v === "" || v === null ? undefined : v), z.coerce.number().optional()),
-    repaymentEvery: z.coerce.number().positive("Repayment frequency is required"),
-    repaymentFrequencyType: z.string().min(1, "Repayment frequency type is required"),
+    npvDayCount: z.coerce.number().int().positive("NPV day count must be > 0"),
     delinquencyBucketId: z.preprocess(
       (v) => (v === "" || v == null ? undefined : v),
       z.coerce.number({ error: "Delinquency bucket is required" }).positive("Delinquency bucket is required"),
     ),
-    delinquencyGraceDays: z.coerce.number().min(0).optional(),
+    breachId: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.number().positive().optional()),
+    nearBreachId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    principal: z.coerce.number().positive("Principal must be > 0"),
+    minPrincipal: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined || v === 0 ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    maxPrincipal: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined || v === 0 ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    periodPaymentRate: z.coerce.number().min(0, "Period payment rate must be >= 0"),
+    minPeriodPaymentRate: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined || v === 0 ? undefined : v),
+      z.coerce.number().min(0).optional(),
+    ),
+    maxPeriodPaymentRate: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined || v === 0 ? undefined : v),
+      z.coerce.number().min(0).optional(),
+    ),
+    discount: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined || v === 0 ? undefined : v),
+      z.coerce.number().min(0, "Discount must be >= 0").optional(),
+    ),
+    repaymentEvery: z.coerce.number().int().positive("Repayment every must be > 0"),
+    repaymentFrequencyType: z.string().min(1, "Repayment frequency type is required"),
+    delinquencyGraceDays: z.coerce.number().int().min(0).optional(),
     delinquencyStartType: z.string().optional(),
+    breachGraceDays: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined || v === 0 ? undefined : v),
+      z.coerce.number().int().min(0).optional(),
+    ),
+    breachStartType: z.string().optional(),
+    allowAttributeOverrides: z
+      .object({
+        delinquencyBucketClassification: z.boolean().optional(),
+        breach: z.boolean().optional(),
+        discountDefault: z.boolean().optional(),
+        periodPaymentFrequency: z.boolean().optional(),
+        periodPaymentFrequencyType: z.boolean().optional(),
+      })
+      .optional(),
     accountingRule: z.string().default("NONE"),
+    fundSourceAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    loanPortfolioAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    transfersInSuspenseAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    deferredIncomeLiabilityAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    incomeFromDiscountFeeAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    receivableFeeAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    receivablePenaltyAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    incomeFromFeeAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    incomeFromPenaltyAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    incomeFromRecoveryAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    writeOffAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    overpaymentLiabilityAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    goodwillCreditAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    incomeFromChargeOffFeesAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    incomeFromChargeOffPenaltyAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    incomeFromGoodwillCreditFeesAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    incomeFromGoodwillCreditPenaltyAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    chargeOffExpenseAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
+    chargeOffFraudExpenseAccountId: z.preprocess(
+      (v) => (v === "" || v == null ? undefined : v),
+      z.coerce.number().positive().optional(),
+    ),
     locale: z.string().default("en"),
     dateFormat: z.string().default("yyyy-MM-dd"),
   })
@@ -52,6 +167,30 @@ export const createWCLoanProductSchema = z
       });
     }
 
+    if (data.accountingRule !== "NONE" && data.accountingRule !== "ACC_DEF_REV_AM") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["accountingRule"],
+        message: "Accounting rule must be NONE or ACC_DEF_REV_AM",
+      });
+    }
+
+    if (data.nearBreachId != null && data.breachId == null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["nearBreachId"],
+        message: "Near Breach requires a Breach configuration to be selected",
+      });
+    }
+
+    if (data.startDate && data.closeDate && new Date(data.closeDate) <= new Date(data.startDate)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["closeDate"],
+        message: "Close Date must be after Start Date",
+      });
+    }
+
     const { principal, minPrincipal, maxPrincipal } = data;
     const hasMin = minPrincipal != null && !Number.isNaN(minPrincipal);
     const hasMax = maxPrincipal != null && !Number.isNaN(maxPrincipal);
@@ -61,21 +200,21 @@ export const createWCLoanProductSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["maxPrincipal"],
-        message: "Max Principal must be greater than or equal to Min Principal",
+        message: "Max Principal must be >= Min Principal",
       });
     }
     if (hasPrincipal && hasMin && principal < minPrincipal) {
       ctx.addIssue({
         code: "custom",
         path: ["principal"],
-        message: "Principal must not be less than Min Principal",
+        message: "Principal must be >= Min Principal",
       });
     }
     if (hasPrincipal && hasMax && principal > maxPrincipal) {
       ctx.addIssue({
         code: "custom",
         path: ["principal"],
-        message: "Principal must not be greater than Max Principal",
+        message: "Principal must be <= Max Principal",
       });
     }
 
@@ -88,24 +227,48 @@ export const createWCLoanProductSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["maxPeriodPaymentRate"],
-        message: "Max Period Payment Rate must be greater than or equal to Min Period Payment Rate",
+        message: "Max Rate must be >= Min Rate",
       });
     }
-
     if (hasPeriodPaymentRate && hasPeriodMin && periodPaymentRate < minPeriodPaymentRate) {
       ctx.addIssue({
         code: "custom",
         path: ["periodPaymentRate"],
-        message: "Period Payment Rate must not be less than Min Period Payment Rate",
+        message: "Period Payment Rate must be >= Min Rate",
       });
     }
-
     if (hasPeriodPaymentRate && hasPeriodMax && periodPaymentRate > maxPeriodPaymentRate) {
       ctx.addIssue({
         code: "custom",
         path: ["periodPaymentRate"],
-        message: "Period Payment Rate must not be greater than Max Period Payment Rate",
+        message: "Period Payment Rate must be <= Max Rate",
       });
+    }
+
+    if (data.accountingRule === "ACC_DEF_REV_AM") {
+      const requiredAccounts: Array<[string, string]> = [
+        ["fundSourceAccountId", "Fund Source Account"],
+        ["loanPortfolioAccountId", "Loan Portfolio Account"],
+        ["transfersInSuspenseAccountId", "Transfers in Suspense Account"],
+        ["deferredIncomeLiabilityAccountId", "Deferred Income Liability Account"],
+        ["incomeFromDiscountFeeAccountId", "Income from Discount Fee Account"],
+        ["receivableFeeAccountId", "Receivable Fee Account"],
+        ["receivablePenaltyAccountId", "Receivable Penalty Account"],
+        ["incomeFromFeeAccountId", "Income from Fee Account"],
+        ["incomeFromPenaltyAccountId", "Income from Penalty Account"],
+        ["incomeFromRecoveryAccountId", "Income from Recovery Account"],
+        ["writeOffAccountId", "Write-off Account"],
+        ["overpaymentLiabilityAccountId", "Overpayment Liability Account"],
+      ];
+      for (const [field, label] of requiredAccounts) {
+        if (data[field as keyof typeof data] == null) {
+          ctx.addIssue({
+            code: "custom",
+            path: [field],
+            message: `${label} is required for Accrual with Deferred Revenue Amortization accounting`,
+          });
+        }
+      }
     }
   });
 export type CreateWCLoanProductFormValues = z.infer<typeof createWCLoanProductSchema>;

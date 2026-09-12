@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormRegister } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +19,6 @@ import {
   updateLoanProduct,
   useLoanProduct,
   useLoanProductTemplate,
-  useFunds,
 } from "@/features/loans";
 import type { LoanProductCreateRequest } from "@/features/loans";
 import { CurrencySelect } from "@/components/shared/CurrencySelect";
@@ -51,6 +50,44 @@ const BUYDOWN_INCOME_TYPE_OPTIONS = [
   { id: BUYDOWN_INCOME_TYPE_FEE, code: BUYDOWN_INCOME_TYPE_FEE, value: "Fee" },
   { id: BUYDOWN_INCOME_TYPE_INTEREST, code: BUYDOWN_INCOME_TYPE_INTEREST, value: "Interest" },
 ];
+
+type GLAccountOption = { id: number; name: string; glCode: string; disabled?: boolean };
+
+const AccountSelect: React.FC<{
+  label: string;
+  accounts: GLAccountOption[];
+  value: number | undefined;
+  onChange: (v: number) => void;
+  error?: string;
+  register: UseFormRegister<LoanProductFormValues>;
+  registerName: keyof LoanProductFormValues;
+}> = ({ label, accounts, value, onChange, error, register, registerName }) => {
+  const fieldId = `acct-${String(registerName)}`;
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={fieldId} className="block text-sm font-medium">
+        {label}{error ? " *" : ""}
+      </label>
+      <Select
+        value={value ? String(value) : ""}
+        onValueChange={(v) => onChange(Number(v))}
+      >
+        <SelectTrigger id={fieldId}>
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {accounts.map((a) => (
+            <SelectItem key={a.id} value={String(a.id)} disabled={a.disabled}>
+              {a.glCode ? `${a.glCode} - ` : ""}{a.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <input type="hidden" {...register(registerName)} />
+      {error && <p className="text-sm text-red-500">{error}</p>}
+    </div>
+  );
+};
 
 /** Resolve template options for a Buy Down Fee enum, restricted to the allowed codes, with a canonical fallback */
 function buyDownOptions(
@@ -1132,7 +1169,6 @@ const LoanProductFormPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { data: existingProduct, isLoading: productLoading } = useLoanProduct(id ? Number(id) : undefined);
   const { data: template, isLoading: templateLoading } = useLoanProductTemplate();
-  const { data: funds = [] } = useFunds();
 
   const createMutation = useMutation({
     mutationFn: (payload: LoanProductCreateRequest) => createLoanProduct(payload),
@@ -1469,7 +1505,7 @@ const LoanProductFormPage: React.FC = () => {
                   <SelectValue placeholder={t("Select fund")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {funds.map((f: any) => (
+                  {(template?.fundOptions ?? []).map((f) => (
                     <SelectItem key={f.id} value={String(f.id)}>
                       {f.name}
                     </SelectItem>
@@ -2040,173 +2076,233 @@ const LoanProductFormPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            {watch("accountingRule") !== 1 && (
-              <>
-                <div className="col-span-2 mt-4 mb-2">
-                  <h4 className="text-sm font-semibold text-gray-700">{t("Asset Accounts")}</h4>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Fund Source")}</label>
-                  <Input type="number" {...register("fundSourceAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Loan Portfolio")}</label>
-                  <Input type="number" {...register("loanPortfolioAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Transfers in Suspense")}</label>
-                  <Input type="number" {...register("transfersInSuspenseAccountId")} placeholder={t("Account ID")} />
-                </div>
-
-                <div className="col-span-2 mt-4 mb-2">
-                  <h4 className="text-sm font-semibold text-gray-700">{t("Income Accounts")}</h4>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Interest on Loans")}</label>
-                  <Input type="number" {...register("interestOnLoanAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Fees")}</label>
-                  <Input type="number" {...register("incomeFromFeeAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Penalties")}</label>
-                  <Input type="number" {...register("incomeFromPenaltyAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Recovery")}</label>
-                  <Input type="number" {...register("incomeFromRecoveryAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Charge-off Interest")}</label>
-                  <Input
-                    type="number"
-                    {...register("incomeFromChargeOffInterestAccountId")}
-                    placeholder={t("Account ID")}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Charge-off Fees")}</label>
-                  <Input
-                    type="number"
-                    {...register("incomeFromChargeOffFeesAccountId")}
-                    placeholder={t("Account ID")}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Charge-off Penalty")}</label>
-                  <Input
-                    type="number"
-                    {...register("incomeFromChargeOffPenaltyAccountId")}
-                    placeholder={t("Account ID")}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Goodwill Credit Interest")}</label>
-                  <Input
-                    type="number"
-                    {...register("incomeFromGoodwillCreditInterestAccountId")}
-                    placeholder={t("Account ID")}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Goodwill Credit Fees")}</label>
-                  <Input
-                    type="number"
-                    {...register("incomeFromGoodwillCreditFeesAccountId")}
-                    placeholder={t("Account ID")}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Income from Goodwill Credit Penalty")}</label>
-                  <Input
-                    type="number"
-                    {...register("incomeFromGoodwillCreditPenaltyAccountId")}
-                    placeholder={t("Account ID")}
-                  />
-                </div>
-                {watch("accountingRule") === 3 || watch("accountingRule") === 4 ? (
-                  <>
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-medium">{t("Deferred Income Liability")}</label>
-                      <Input
-                        type="number"
-                        {...register("deferredIncomeLiabilityAccountId")}
-                        placeholder={t("Account ID")}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-medium">{t("Income from Capitalization")}</label>
-                      <Input
-                        type="number"
-                        {...register("incomeFromCapitalizationAccountId")}
-                        placeholder={t("Account ID")}
-                      />
-                    </div>
-                  </>
-                ) : null}
-
-                <div className="col-span-2 mt-4 mb-2">
-                  <h4 className="text-sm font-semibold text-gray-700">{t("Expense Accounts")}</h4>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Write-off")}</label>
-                  <Input type="number" {...register("writeOffAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Charge-off Expense")}</label>
-                  <Input type="number" {...register("chargeOffExpenseAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Charge-off Fraud Expense")}</label>
-                  <Input type="number" {...register("chargeOffFraudExpenseAccountId")} placeholder={t("Account ID")} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Goodwill Credit")}</label>
-                  <Input type="number" {...register("goodwillCreditAccountId")} placeholder={t("Account ID")} />
-                </div>
-                {watch("enableBuyDownFee") && (
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-medium">{t("Buy Down Expense")}</label>
-                    <Input type="number" {...register("buyDownExpenseAccountId")} placeholder={t("Account ID")} />
+            {watch("accountingRule") !== 1 && (() => {
+              const gl = template?.accountingMappingOptions;
+              return (
+                <>
+                  <div className="col-span-2 mt-4 mb-2">
+                    <h4 className="text-sm font-semibold text-gray-700">{t("Asset Accounts")}</h4>
                   </div>
-                )}
-                {watch("enableBuyDownFee") && (
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-medium">{t("Income from Buy Down")}</label>
-                    <Input type="number" {...register("incomeFromBuyDownAccountId")} placeholder={t("Account ID")} />
+                  <AccountSelect
+                    label={t("Fund Source")}
+                    accounts={gl?.assetAccountOptions ?? []}
+                    value={watch("fundSourceAccountId")}
+                    onChange={(v) => setValue("fundSourceAccountId", v, { shouldValidate: true })}
+                    error={errors.fundSourceAccountId?.message}
+                    register={register} registerName="fundSourceAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Loan Portfolio")}
+                    accounts={gl?.assetAccountOptions ?? []}
+                    value={watch("loanPortfolioAccountId")}
+                    onChange={(v) => setValue("loanPortfolioAccountId", v, { shouldValidate: true })}
+                    error={errors.loanPortfolioAccountId?.message}
+                    register={register} registerName="loanPortfolioAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Transfers in Suspense")}
+                    accounts={gl?.assetAccountOptions ?? []}
+                    value={watch("transfersInSuspenseAccountId")}
+                    onChange={(v) => setValue("transfersInSuspenseAccountId", v, { shouldValidate: true })}
+                    error={errors.transfersInSuspenseAccountId?.message}
+                    register={register} registerName="transfersInSuspenseAccountId"
+                  />
+
+                  <div className="col-span-2 mt-4 mb-2">
+                    <h4 className="text-sm font-semibold text-gray-700">{t("Income Accounts")}</h4>
                   </div>
-                )}
+                  <AccountSelect
+                    label={t("Interest on Loans")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("interestOnLoanAccountId")}
+                    onChange={(v) => setValue("interestOnLoanAccountId", v, { shouldValidate: true })}
+                    error={errors.interestOnLoanAccountId?.message}
+                    register={register} registerName="interestOnLoanAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Fees")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromFeeAccountId")}
+                    onChange={(v) => setValue("incomeFromFeeAccountId", v, { shouldValidate: true })}
+                    error={errors.incomeFromFeeAccountId?.message}
+                    register={register} registerName="incomeFromFeeAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Penalties")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromPenaltyAccountId")}
+                    onChange={(v) => setValue("incomeFromPenaltyAccountId", v, { shouldValidate: true })}
+                    error={errors.incomeFromPenaltyAccountId?.message}
+                    register={register} registerName="incomeFromPenaltyAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Recovery")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromRecoveryAccountId")}
+                    onChange={(v) => setValue("incomeFromRecoveryAccountId", v, { shouldValidate: true })}
+                    error={errors.incomeFromRecoveryAccountId?.message}
+                    register={register} registerName="incomeFromRecoveryAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Charge-off Interest")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromChargeOffInterestAccountId")}
+                    onChange={(v) => setValue("incomeFromChargeOffInterestAccountId", v)}
+                    register={register} registerName="incomeFromChargeOffInterestAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Charge-off Fees")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromChargeOffFeesAccountId")}
+                    onChange={(v) => setValue("incomeFromChargeOffFeesAccountId", v)}
+                    register={register} registerName="incomeFromChargeOffFeesAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Charge-off Penalty")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromChargeOffPenaltyAccountId")}
+                    onChange={(v) => setValue("incomeFromChargeOffPenaltyAccountId", v)}
+                    register={register} registerName="incomeFromChargeOffPenaltyAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Goodwill Credit Interest")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromGoodwillCreditInterestAccountId")}
+                    onChange={(v) => setValue("incomeFromGoodwillCreditInterestAccountId", v)}
+                    register={register} registerName="incomeFromGoodwillCreditInterestAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Goodwill Credit Fees")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromGoodwillCreditFeesAccountId")}
+                    onChange={(v) => setValue("incomeFromGoodwillCreditFeesAccountId", v)}
+                    register={register} registerName="incomeFromGoodwillCreditFeesAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Income from Goodwill Credit Penalty")}
+                    accounts={gl?.incomeAccountOptions ?? []}
+                    value={watch("incomeFromGoodwillCreditPenaltyAccountId")}
+                    onChange={(v) => setValue("incomeFromGoodwillCreditPenaltyAccountId", v)}
+                    register={register} registerName="incomeFromGoodwillCreditPenaltyAccountId"
+                  />
+                  {watch("accountingRule") === 3 || watch("accountingRule") === 4 ? (
+                    <>
+                      <AccountSelect
+                        label={t("Deferred Income Liability")}
+                        accounts={gl?.liabilityAccountOptions ?? []}
+                        value={watch("deferredIncomeLiabilityAccountId")}
+                        onChange={(v) => setValue("deferredIncomeLiabilityAccountId", v)}
+                        register={register} registerName="deferredIncomeLiabilityAccountId"
+                      />
+                      <AccountSelect
+                        label={t("Income from Capitalization")}
+                        accounts={gl?.incomeAccountOptions ?? []}
+                        value={watch("incomeFromCapitalizationAccountId")}
+                        onChange={(v) => setValue("incomeFromCapitalizationAccountId", v)}
+                        register={register} registerName="incomeFromCapitalizationAccountId"
+                      />
+                    </>
+                  ) : null}
 
-                <div className="col-span-2 mt-4 mb-2">
-                  <h4 className="text-sm font-semibold text-gray-700">{t("Liability Accounts")}</h4>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium">{t("Overpayment Liability")}</label>
-                  <Input type="number" {...register("overpaymentLiabilityAccountId")} placeholder={t("Account ID")} />
-                </div>
+                  <div className="col-span-2 mt-4 mb-2">
+                    <h4 className="text-sm font-semibold text-gray-700">{t("Expense Accounts")}</h4>
+                  </div>
+                  <AccountSelect
+                    label={t("Write-off")}
+                    accounts={gl?.expenseAccountOptions ?? []}
+                    value={watch("writeOffAccountId")}
+                    onChange={(v) => setValue("writeOffAccountId", v, { shouldValidate: true })}
+                    error={errors.writeOffAccountId?.message}
+                    register={register} registerName="writeOffAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Charge-off Expense")}
+                    accounts={gl?.expenseAccountOptions ?? []}
+                    value={watch("chargeOffExpenseAccountId")}
+                    onChange={(v) => setValue("chargeOffExpenseAccountId", v)}
+                    register={register} registerName="chargeOffExpenseAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Charge-off Fraud Expense")}
+                    accounts={gl?.expenseAccountOptions ?? []}
+                    value={watch("chargeOffFraudExpenseAccountId")}
+                    onChange={(v) => setValue("chargeOffFraudExpenseAccountId", v)}
+                    register={register} registerName="chargeOffFraudExpenseAccountId"
+                  />
+                  <AccountSelect
+                    label={t("Goodwill Credit")}
+                    accounts={gl?.liabilityAccountOptions ?? []}
+                    value={watch("goodwillCreditAccountId")}
+                    onChange={(v) => setValue("goodwillCreditAccountId", v)}
+                    register={register} registerName="goodwillCreditAccountId"
+                  />
+                  {watch("enableBuyDownFee") && (
+                    <AccountSelect
+                      label={t("Buy Down Expense")}
+                      accounts={gl?.expenseAccountOptions ?? []}
+                      value={watch("buyDownExpenseAccountId")}
+                      onChange={(v) => setValue("buyDownExpenseAccountId", v, { shouldValidate: true })}
+                      error={errors.buyDownExpenseAccountId?.message}
+                      register={register} registerName="buyDownExpenseAccountId"
+                    />
+                  )}
+                  {watch("enableBuyDownFee") && (
+                    <AccountSelect
+                      label={t("Income from Buy Down")}
+                      accounts={gl?.incomeAccountOptions ?? []}
+                      value={watch("incomeFromBuyDownAccountId")}
+                      onChange={(v) => setValue("incomeFromBuyDownAccountId", v, { shouldValidate: true })}
+                      error={errors.incomeFromBuyDownAccountId?.message}
+                      register={register} registerName="incomeFromBuyDownAccountId"
+                    />
+                  )}
 
-                {(watch("accountingRule") === 3 || watch("accountingRule") === 4) && (
-                  <>
-                    <div className="col-span-2 mt-4 mb-2">
-                      <h4 className="text-sm font-semibold text-gray-700">{t("Receivable Accounts (Accrual)")}</h4>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-medium">{t("Receivable Interest")}</label>
-                      <Input type="number" {...register("receivableInterestAccountId")} placeholder={t("Account ID")} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-medium">{t("Receivable Fees")}</label>
-                      <Input type="number" {...register("receivableFeeAccountId")} placeholder={t("Account ID")} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-medium">{t("Receivable Penalties")}</label>
-                      <Input type="number" {...register("receivablePenaltyAccountId")} placeholder={t("Account ID")} />
-                    </div>
-                  </>
-                )}
-              </>
-            )}
+                  <div className="col-span-2 mt-4 mb-2">
+                    <h4 className="text-sm font-semibold text-gray-700">{t("Liability Accounts")}</h4>
+                  </div>
+                  <AccountSelect
+                    label={t("Overpayment Liability")}
+                    accounts={gl?.liabilityAccountOptions ?? []}
+                    value={watch("overpaymentLiabilityAccountId")}
+                    onChange={(v) => setValue("overpaymentLiabilityAccountId", v, { shouldValidate: true })}
+                    error={errors.overpaymentLiabilityAccountId?.message}
+                    register={register} registerName="overpaymentLiabilityAccountId"
+                  />
+
+                  {(watch("accountingRule") === 3 || watch("accountingRule") === 4) && (
+                    <>
+                      <div className="col-span-2 mt-4 mb-2">
+                        <h4 className="text-sm font-semibold text-gray-700">{t("Receivable Accounts (Accrual)")}</h4>
+                      </div>
+                      <AccountSelect
+                        label={t("Receivable Interest")}
+                        accounts={gl?.assetAccountOptions ?? []}
+                        value={watch("receivableInterestAccountId")}
+                        onChange={(v) => setValue("receivableInterestAccountId", v, { shouldValidate: true })}
+                        error={errors.receivableInterestAccountId?.message}
+                        register={register} registerName="receivableInterestAccountId"
+                      />
+                      <AccountSelect
+                        label={t("Receivable Fees")}
+                        accounts={gl?.assetAccountOptions ?? []}
+                        value={watch("receivableFeeAccountId")}
+                        onChange={(v) => setValue("receivableFeeAccountId", v, { shouldValidate: true })}
+                        error={errors.receivableFeeAccountId?.message}
+                        register={register} registerName="receivableFeeAccountId"
+                      />
+                      <AccountSelect
+                        label={t("Receivable Penalties")}
+                        accounts={gl?.assetAccountOptions ?? []}
+                        value={watch("receivablePenaltyAccountId")}
+                        onChange={(v) => setValue("receivablePenaltyAccountId", v, { shouldValidate: true })}
+                        error={errors.receivablePenaltyAccountId?.message}
+                        register={register} registerName="receivablePenaltyAccountId"
+                      />
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </CardContent>
         </Card>
 
@@ -2604,7 +2700,24 @@ const LoanProductFormPage: React.FC = () => {
             </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Delinquency Bucket")}</label>
-              <Input type="number" {...register("delinquencyBucketId")} placeholder={t("Bucket ID")} />
+              <Select
+                value={watch("delinquencyBucketId") ? String(watch("delinquencyBucketId")) : ""}
+                onValueChange={(v) => setValue("delinquencyBucketId", Number(v), { shouldValidate: true })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("Select delinquency bucket")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(template?.delinquencyBucketOptions ?? []).map((b) => (
+                    <SelectItem key={b.id} value={String(b.id)}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.delinquencyBucketId && (
+                <p className="text-sm text-red-500">{errors.delinquencyBucketId.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Due Days for Repayment Event")}</label>

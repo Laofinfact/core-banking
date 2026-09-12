@@ -78,9 +78,38 @@ function mapWCLoanProduct(product: WCLoanProduct): WCLoanProduct {
 
 export async function fetchWCLoanProductTemplate(): Promise<WCLoanProductTemplate> {
   const { data } = await client.get<WCLoanProductTemplate>("/working-capital-loan-products/template");
+  const d = data as Record<string, unknown>;
+  const list = (v: unknown) => (Array.isArray(v) ? v : []);
+  const strEnum = (v: unknown) =>
+    list(v).map((o: Record<string, unknown>) => ({
+      id: Number(o.id ?? 0),
+      code: String(o.code ?? o.value ?? ""),
+      value: String(o.value ?? o.code ?? ""),
+    }));
   return {
-    ...data,
-    repaymentFrequencyTypeOptions: data?.repaymentFrequencyTypeOptions ?? data?.periodFrequencyTypeOptions,
+    currencyOptions: (d?.currencyOptions as WCLoanProductTemplate["currencyOptions"]) ?? [],
+    fundOptions: (d?.fundOptions as WCLoanProductTemplate["fundOptions"]) ?? [],
+    amortizationTypeOptions: strEnum(d?.amortizationTypeOptions),
+    repaymentFrequencyTypeOptions: strEnum(d?.repaymentFrequencyTypeOptions ?? d?.periodFrequencyTypeOptions),
+    periodFrequencyTypeOptions: strEnum(d?.periodFrequencyTypeOptions),
+    delinquencyBucketOptions: (d?.delinquencyBucketOptions as WCLoanProductTemplate["delinquencyBucketOptions"]) ?? [],
+    breachOptions: (d?.breachOptions as WCLoanProductTemplate["breachOptions"]) ?? [],
+    nearBreachOptions: (d?.nearBreachOptions as WCLoanProductTemplate["nearBreachOptions"]) ?? [],
+    delinquencyStartTypeOptions: strEnum(d?.delinquencyStartTypeOptions),
+    breachStartTypeOptions: strEnum(d?.breachStartTypeOptions),
+    delinquencyMinimumPaymentTypeOptions: strEnum(d?.delinquencyMinimumPaymentTypeOptions),
+    accountingRuleOptions: strEnum(d?.accountingRuleOptions),
+    accountingMappingOptions: (d?.accountingMappingOptions as WCLoanProductTemplate["accountingMappingOptions"]),
+    advancedPaymentAllocationTransactionTypes: strEnum(d?.advancedPaymentAllocationTransactionTypes),
+    advancedPaymentAllocationTypes: strEnum(d?.advancedPaymentAllocationTypes),
+    advancedPaymentAllocationFutureInstallmentAllocationRules: strEnum(
+      d?.advancedPaymentAllocationFutureInstallmentAllocationRules,
+    ),
+    paymentTypeOptions: (d?.paymentTypeOptions as WCLoanProductTemplate["paymentTypeOptions"]) ?? [],
+    chargeOptions: (d?.chargeOptions as WCLoanProductTemplate["chargeOptions"]) ?? [],
+    penaltyOptions: (d?.penaltyOptions as WCLoanProductTemplate["penaltyOptions"]) ?? [],
+    chargeOffReasonOptions: (d?.chargeOffReasonOptions as WCLoanProductTemplate["chargeOffReasonOptions"]) ?? [],
+    writeOffReasonOptions: (d?.writeOffReasonOptions as WCLoanProductTemplate["writeOffReasonOptions"]) ?? [],
   };
 }
 

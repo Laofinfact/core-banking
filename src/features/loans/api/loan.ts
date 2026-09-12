@@ -38,7 +38,78 @@ export async function fetchLoanProduct(productId: number): Promise<LoanProduct> 
 
 export async function fetchLoanProductTemplate(): Promise<LoanProductTemplate> {
   const { data } = await client.get<LoanProductTemplate>("/loanproducts/template");
-  return data;
+  const d = data as Record<string, unknown>;
+  const list = (v: unknown) => (Array.isArray(v) ? v : []);
+  const enumOpt = (v: unknown) =>
+    list(v).map((o: Record<string, unknown>) => ({
+      id: Number(o.id ?? 0),
+      code: String(o.code ?? o.value ?? ""),
+      value: String(o.value ?? o.description ?? o.code ?? ""),
+    }));
+  const strEnumOpt = (v: unknown) =>
+    list(v).map((o: Record<string, unknown>) => ({
+      id: String(o.id ?? ""),
+      code: String(o.code ?? o.value ?? ""),
+      value: String(o.value ?? o.description ?? o.code ?? ""),
+    }));
+  const strEnumOptById = (v: unknown) =>
+    list(v).map((o: Record<string, unknown>) => ({
+      id: String(o.id ?? ""),
+      code: String(o.id ?? o.code ?? o.value ?? ""),
+      value: String(o.value ?? o.description ?? o.code ?? ""),
+    }));
+
+  return {
+    currencyOptions: (d?.currencyOptions as LoanProductTemplate["currencyOptions"]) ?? [],
+    fundOptions: (d?.fundOptions as LoanProductTemplate["fundOptions"]) ?? [],
+    amortizationTypeOptions: enumOpt(d?.amortizationTypeOptions),
+    interestTypeOptions: enumOpt(d?.interestTypeOptions),
+    interestCalculationPeriodTypeOptions: enumOpt(d?.interestCalculationPeriodTypeOptions),
+    repaymentFrequencyTypeOptions: enumOpt(d?.repaymentFrequencyTypeOptions),
+    interestRateFrequencyTypeOptions: enumOpt(d?.interestRateFrequencyTypeOptions),
+    transactionProcessingStrategyOptions: (d?.transactionProcessingStrategyOptions as LoanProductTemplate["transactionProcessingStrategyOptions"]) ?? [],
+    daysInYearTypeOptions: enumOpt(d?.daysInYearTypeOptions),
+    daysInMonthTypeOptions: enumOpt(d?.daysInMonthTypeOptions),
+    accountingRuleOptions: enumOpt(d?.accountingRuleOptions),
+    loanScheduleTypeOptions: enumOpt(d?.loanScheduleTypeOptions),
+    loanScheduleProcessingTypeOptions: enumOpt(d?.loanScheduleProcessingTypeOptions),
+    repaymentStartDateTypeOptions: enumOpt(d?.repaymentStartDateTypeOptions),
+    delinquencyBucketOptions: (d?.delinquencyBucketOptions as LoanProductTemplate["delinquencyBucketOptions"]) ?? [],
+    chargeOffBehaviourOptions: strEnumOpt(d?.chargeOffBehaviourOptions),
+    interestRecalculationCompoundingTypeOptions: enumOpt(d?.interestRecalculationCompoundingTypeOptions),
+    rescheduleStrategyTypeOptions: enumOpt(d?.rescheduleStrategyTypeOptions),
+    interestRecalculationFrequencyTypeOptions: enumOpt(d?.interestRecalculationFrequencyTypeOptions),
+    interestRecalculationNthDayTypeOptions: enumOpt(d?.interestRecalculationNthDayTypeOptions),
+    interestRecalculationDayOfWeekTypeOptions: enumOpt(d?.interestRecalculationDayOfWeekTypeOptions),
+    preClosureInterestCalculationStrategyOptions: enumOpt(d?.preClosureInterestCalculationStrategyOptions),
+    floatingRateOptions: (d?.floatingRateOptions as LoanProductTemplate["floatingRateOptions"]) ?? [],
+    buyDownFeeIncomeTypeOptions: strEnumOptById(d?.buyDownFeeIncomeTypeOptions),
+    buyDownFeeCalculationTypeOptions: strEnumOptById(d?.buyDownFeeCalculationTypeOptions),
+    buyDownFeeStrategyOptions: strEnumOptById(d?.buyDownFeeStrategyOptions),
+    capitalizedIncomeTypeOptions: strEnumOptById(d?.capitalizedIncomeTypeOptions),
+    capitalizedIncomeCalculationTypeOptions: strEnumOptById(d?.capitalizedIncomeCalculationTypeOptions),
+    capitalizedIncomeStrategyOptions: strEnumOptById(d?.capitalizedIncomeStrategyOptions),
+    valueConditionTypeOptions: enumOpt(d?.valueConditionTypeOptions),
+    writeOffReasonOptions: (d?.writeOffReasonOptions as LoanProductTemplate["writeOffReasonOptions"]) ?? [],
+    chargeOffReasonOptions: (d?.chargeOffReasonOptions as LoanProductTemplate["chargeOffReasonOptions"]) ?? [],
+    advancedPaymentAllocationTransactionTypes: enumOpt(d?.advancedPaymentAllocationTransactionTypes),
+    advancedPaymentAllocationFutureInstallmentAllocationRules: enumOpt(d?.advancedPaymentAllocationFutureInstallmentAllocationRules),
+    advancedPaymentAllocationTypes: enumOpt(d?.advancedPaymentAllocationTypes),
+    creditAllocationTransactionTypes: enumOpt(d?.creditAllocationTransactionTypes),
+    creditAllocationAllocationTypes: enumOpt(d?.creditAllocationAllocationTypes),
+    supportedInterestRefundTypesOptions: strEnumOpt(d?.supportedInterestRefundTypesOptions),
+    daysInYearCustomStrategyOptions: strEnumOpt(d?.daysInYearCustomStrategyOptions),
+    accountingMappingOptions: (d?.accountingMappingOptions as LoanProductTemplate["accountingMappingOptions"]) ?? {
+      assetAccountOptions: [],
+      liabilityAccountOptions: [],
+      incomeAccountOptions: [],
+      expenseAccountOptions: [],
+    },
+    paymentTypeOptions: (d?.paymentTypeOptions as LoanProductTemplate["paymentTypeOptions"]) ?? [],
+    chargeOptions: (d?.chargeOptions as LoanProductTemplate["chargeOptions"]) ?? [],
+    penaltyOptions: (d?.penaltyOptions as LoanProductTemplate["penaltyOptions"]) ?? [],
+    rateOptions: (d?.rateOptions as LoanProductTemplate["rateOptions"]) ?? [],
+  };
 }
 
 export async function createLoanProduct(payload: LoanProductCreateRequest): Promise<LoanCommandResponse> {

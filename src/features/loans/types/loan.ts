@@ -582,37 +582,46 @@ export interface LoanProductTemplate {
     displaySymbol?: string;
     nameCode: string;
     displayLabel: string;
+    inMultiplesOf?: number;
   }>;
   fundOptions?: Array<{ id: number; name: string }>;
-  repaymentFrequencyTypeOptions?: Array<{ id: number; code: string; value: string }>;
-  interestRateFrequencyTypeOptions?: Array<{ id: number; code: string; value: string }>;
   amortizationTypeOptions?: Array<{ id: number; code: string; value: string }>;
   interestTypeOptions?: Array<{ id: number; code: string; value: string }>;
   interestCalculationPeriodTypeOptions?: Array<{ id: number; code: string; value: string }>;
-  transactionProcessingStrategyOptions?: Array<{ code: string; name: string }>;
+  repaymentFrequencyTypeOptions?: Array<{ id: number; code: string; value: string }>;
+  interestRateFrequencyTypeOptions?: Array<{ id: number; code: string; value: string }>;
+  transactionProcessingStrategyOptions?: Array<{ id: number; code: string; name: string }>;
   daysInYearTypeOptions?: Array<{ id: number; code: string; value: string }>;
   daysInMonthTypeOptions?: Array<{ id: number; code: string; value: string }>;
   accountingRuleOptions?: Array<{ id: number; code: string; value: string }>;
   loanScheduleTypeOptions?: Array<{ id: number; code: string; value: string }>;
   loanScheduleProcessingTypeOptions?: Array<{ id: number; code: string; value: string }>;
   repaymentStartDateTypeOptions?: Array<{ id: number; code: string; value: string }>;
+  delinquencyBucketOptions?: Array<{ id: number; name: string; bucketType?: string }>;
   chargeOffBehaviourOptions?: Array<{ id: string; code: string; value: string }>;
   interestRecalculationCompoundingTypeOptions?: Array<{ id: number; code: string; value: string }>;
   rescheduleStrategyTypeOptions?: Array<{ id: number; code: string; value: string }>;
   interestRecalculationFrequencyTypeOptions?: Array<{ id: number; code: string; value: string }>;
-  preClosureInterestCalculationStrategyOptions?: Array<{ id: number; code: string; value: string }>;
-  buyDownFeeIncomeTypeOptions?: Array<{ id: string; code: string; value: string }>;
-  buyDownFeeCalculationTypeOptions?: Array<{ id: string; code: string; value: string }>;
-  buyDownFeeStrategyOptions?: Array<{ id: string; code: string; value: string }>;
-  capitalizedIncomeTypeOptions?: Array<{ id: string; code: string; value: string }>;
-  capitalizedIncomeCalculationTypeOptions?: Array<{ id: string; code: string; value: string }>;
-  capitalizedIncomeStrategyOptions?: Array<{ id: string; code: string; value: string }>;
-  valueConditionTypeOptions?: Array<{ id: number; code: string; value: string }>;
-  writeOffReasonOptions?: Array<{ id: number; name: string }>;
   interestRecalculationNthDayTypeOptions?: Array<{ id: number; code: string; value: string }>;
   interestRecalculationDayOfWeekTypeOptions?: Array<{ id: number; code: string; value: string }>;
+  preClosureInterestCalculationStrategyOptions?: Array<{ id: number; code: string; value: string }>;
+  floatingRateOptions?: Array<{ id: number; name: string; isBaseLendingRate: boolean; isActive: boolean }>;
+  buyDownFeeCalculationTypeOptions?: Array<{ id: string; code: string; value: string }>;
+  buyDownFeeStrategyOptions?: Array<{ id: string; code: string; value: string }>;
+  buyDownFeeIncomeTypeOptions?: Array<{ id: string; code: string; value: string }>;
+  capitalizedIncomeCalculationTypeOptions?: Array<{ id: string; code: string; value: string }>;
+  capitalizedIncomeStrategyOptions?: Array<{ id: string; code: string; value: string }>;
+  capitalizedIncomeTypeOptions?: Array<{ id: string; code: string; value: string }>;
+  valueConditionTypeOptions?: Array<{ id: number; code: string; value: string }>;
+  writeOffReasonOptions?: Array<{ id: number; name: string; code?: string; value?: string }>;
+  chargeOffReasonOptions?: Array<{ id: number; name: string; code?: string; value?: string }>;
   advancedPaymentAllocationTransactionTypes?: Array<{ id: number; code: string; value: string }>;
   advancedPaymentAllocationFutureInstallmentAllocationRules?: Array<{ id: number; code: string; value: string }>;
+  advancedPaymentAllocationTypes?: Array<{ id: number; code: string; value: string }>;
+  creditAllocationTransactionTypes?: Array<{ id: number; code: string; value: string }>;
+  creditAllocationAllocationTypes?: Array<{ id: number; code: string; value: string }>;
+  supportedInterestRefundTypesOptions?: Array<{ id: string; code: string; value: string }>;
+  daysInYearCustomStrategyOptions?: Array<{ id: string; code: string; value: string }>;
   accountingMappingOptions?: {
     assetAccountOptions?: Array<{ id: number; name: string; glCode: string; disabled?: boolean }>;
     liabilityAccountOptions?: Array<{ id: number; name: string; glCode: string; disabled?: boolean }>;
@@ -628,6 +637,23 @@ export interface LoanProductTemplate {
     isSystemDefined?: boolean;
     codeName?: string;
   }>;
+  chargeOptions?: Array<{
+    id: number;
+    name: string;
+    active?: boolean;
+    penalty?: boolean;
+    amount?: number;
+    currency?: { code: string; name: string; decimalPlaces: number };
+  }>;
+  penaltyOptions?: Array<{
+    id: number;
+    name: string;
+    active?: boolean;
+    penalty?: boolean;
+    amount?: number;
+    currency?: { code: string; name: string; decimalPlaces: number };
+  }>;
+  rateOptions?: Array<{ id: number; name: string; percentage: number; active?: boolean }>;
 }
 
 // ─── Loan Product Create ─────────────────────────────────────────

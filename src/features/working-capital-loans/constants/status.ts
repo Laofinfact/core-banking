@@ -53,6 +53,11 @@ export const DELINQUENCY_START_TYPE_OPTIONS = [
   { value: "LOAN_CREATION", label: i18n.t("Loan Creation") },
 ];
 
+export const BREACH_START_TYPE_OPTIONS = [
+  { value: "DISBURSEMENT", label: i18n.t("Disbursement") },
+  { value: "LOAN_CREATION", label: i18n.t("Loan Creation") },
+];
+
 export function resolveWCStatusCode(loan: { status?: { id?: number; code?: string; value?: string } }): string {
   const s = loan.status;
   if (!s) return "Unknown";
