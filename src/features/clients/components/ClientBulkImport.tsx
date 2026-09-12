@@ -27,7 +27,7 @@ const ClientBulkImport: FC = () => {
         return;
       }
       const ext = file.name.split(".").pop()?.toLowerCase();
-      if (ext !== "xls") {
+      if (ext !== "xls" && ext !== "xlsx") {
         setFileError(t("clients.bulkImport.invalidFileType"));
         setSelectedFile(null);
         return;
@@ -113,11 +113,11 @@ const ClientBulkImport: FC = () => {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".xls"
+                    accept=".xls,.xlsx"
                     onChange={handleFileChange}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-[#D32F2F] hover:file:bg-red-100 cursor-pointer"
                   />
-                  <p className="text-xs text-gray-400">{t("clients.bulkImport.acceptedFormat")}: .xls (MS Excel)</p>
+                  <p className="text-xs text-gray-400">{t("clients.bulkImport.acceptedFormat")}: .xls, .xlsx</p>
                   {fileError && (
                     <div className="flex items-center gap-1 text-sm text-red-600">
                       <AlertCircle className="h-4 w-4" />

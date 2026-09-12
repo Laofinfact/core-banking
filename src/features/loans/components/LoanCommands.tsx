@@ -17,6 +17,7 @@ import {
   PiggyBank,
   UserPlus,
   UserMinus,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -62,6 +63,88 @@ type DateCommand = "approve" | "disburse" | "disburseToSavings";
 type ConfirmCommand = "reject" | "withdraw" | "undoApproval" | "undoDisbursal" | "undoLastDisbursal" | "undoWriteOff" | "delete";
 type LoanOfficerDialog = "assign" | "unassign" | null;
 
+interface DateValidationErrors {
+  date?: string;
+  amount?: string;
+  expectedDisbursementDate?: string;
+  general?: string;
+}
+
+function validateApprovalDates(
+  dateInput: string,
+  amountInput: string,
+  expectedDisbursementDate: string,
+  loan: Loan,
+): DateValidationErrors {
+  const errors: DateValidationErrors = {};
+  const submittedOnDate = loan.timeline?.submittedOnDate
+    ? new Date(Array.isArray(loan.timeline.submittedOnDate) ? loan.timeline.submittedOnDate.join("-") : loan.timeline.submittedOnDate)
+    : null;
+  const proposedPrincipal = loan.proposedPrincipal ?? loan.principal ?? 0;
+
+  if (!dateInput) {
+    errors.date = "Approval date is required";
+  } else if (submittedOnDate && new Date(dateInput) < submittedOnDate) {
+    errors.date = "Approval date cannot be before the submitted on date";
+  } else if (new Date(dateInput) > new Date()) {
+    errors.date = "Approval date cannot be in the future";
+  }
+
+  const amount = Number(amountInput);
+  if (amountInput && (Number.isNaN(amount) || amount <= 0)) {
+    errors.amount = "Approved amount must be a positive number";
+  } else if (amountInput && amount > proposedPrincipal) {
+    errors.amount = `Approved amount (${amount}) cannot exceed proposed principal (${proposedPrincipal})`;
+  }
+
+  if (dateInput && expectedDisbursementDate && new Date(expectedDisbursementDate) < new Date(dateInput)) {
+    errors.expectedDisbursementDate = "Expected disbursement date must be on or after the approval date";
+  }
+
+  return errors;
+}
+
+function validateDisbursementDate(dateInput: string, amountInput: string, loan: Loan): DateValidationErrors {
+  const errors: DateValidationErrors = {};
+  const approvedPrincipal = loan.approvedPrincipal ?? loan.principal ?? 0;
+  const disbursedAmount = loan.summary?.principalDisbursed ?? 0;
+
+  if (!dateInput) {
+    errors.date = "Disbursement date is required";
+  } else if (new Date(dateInput) > new Date()) {
+    errors.date = "Disbursement date cannot be in the future";
+  }
+
+  const amount = Number(amountInput);
+  if (amountInput && (Number.isNaN(amount) || amount <= 0)) {
+    errors.amount = "Disbursement amount must be a positive number";
+  } else if (amountInput && loan.multiDisburseLoan) {
+    const totalAfterDisburse = disbursedAmount + amount;
+    if (totalAfterDisburse > approvedPrincipal) {
+      errors.amount = `Total disbursed (${totalAfterDisburse}) cannot exceed approved principal (${approvedPrincipal})`;
+    }
+  }
+
+  return errors;
+}
+
+function validateLifecycleDate(dateInput: string, loan: Loan, actionLabel: string): DateValidationErrors {
+  const errors: DateValidationErrors = {};
+  const submittedOnDate = loan.timeline?.submittedOnDate
+    ? new Date(Array.isArray(loan.timeline.submittedOnDate) ? loan.timeline.submittedOnDate.join("-") : loan.timeline.submittedOnDate)
+    : null;
+
+  if (!dateInput) {
+    errors.date = `${actionLabel} date is required`;
+  } else if (submittedOnDate && new Date(dateInput) < submittedOnDate) {
+    errors.date = `${actionLabel} date cannot be before the submitted on date`;
+  } else if (new Date(dateInput) > new Date()) {
+    errors.date = `${actionLabel} date cannot be in the future`;
+  }
+
+  return errors;
+}
+
 const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -90,6 +173,8 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
   const isOverpaid = statusId === 700;
   const isMultiDisbursal = !!loan.multiDisburseLoan;
   const hasLoanOfficer = !!loan.loanOfficerId;
+  const hasReAgeTx = (loan.transactions ?? []).some((tx) => /reAge/i.test(tx.type?.code ?? "") || /reAge/i.test(tx.type?.value ?? ""));
+  const hasReAmortizeTx = (loan.transactions ?? []).some((tx) => /reAmortize/i.test(tx.type?.code ?? "") || /reAmortize/i.test(tx.type?.value ?? ""));
 
   const [dateCommand, setDateCommand] = useState<DateCommand | null>(null);
   const [confirmCommand, setConfirmCommand] = useState<ConfirmCommand | null>(null);
@@ -103,6 +188,9 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
   const [unassignDate, setUnassignDate] = useState(today());
   const [rejectedOnDate, setRejectedOnDate] = useState(today());
   const [withdrawnOnDate, setWithdrawnOnDate] = useState(today());
+  const [dateErrors, setDateErrors] = useState<DateValidationErrors>({});
+  const [rejectErrors, setRejectErrors] = useState<DateValidationErrors>({});
+  const [withdrawErrors, setWithdrawErrors] = useState<DateValidationErrors>({});
 
   const { data: loanOfficers = [] } = useQuery({
     queryKey: ["staff", "loanOfficers", loan.officeId],
@@ -139,6 +227,17 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
 
   const handleDateCommand = useCallback(async () => {
     if (!dateCommand) return;
+
+    let errors: DateValidationErrors = {};
+    if (dateCommand === "approve") {
+      errors = validateApprovalDates(dateInput, amountInput, expectedDisbursementDate, loan);
+    } else if (dateCommand === "disburse") {
+      errors = validateDisbursementDate(dateInput, amountInput, loan);
+    }
+    setDateErrors(errors);
+
+    if (Object.keys(errors).length > 0) return;
+
     const note = noteInput || undefined;
     if (dateCommand === "approve") {
       await approveMut.mutateAsync({
@@ -173,6 +272,7 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
       toastSuccess(t("Loan disbursed successfully"));
     }
     setDateCommand(null);
+    setDateErrors({});
     onSuccess?.();
   }, [
     dateCommand,
@@ -180,7 +280,7 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
     amountInput,
     expectedDisbursementDate,
     noteInput,
-    loan.id,
+    loan,
     approveMut,
     disburseMut,
     disburseToSavingsMut,
@@ -192,18 +292,28 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
   const handleConfirmCommand = useCallback(async () => {
     if (!confirmCommand) return;
     switch (confirmCommand) {
-      case "reject":
+      case "reject": {
+        const errors = validateLifecycleDate(rejectedOnDate, loan, "Rejection");
+        setRejectErrors(errors);
+        if (Object.keys(errors).length > 0) return;
         await rejectMut.mutateAsync({
           loanId: loan.id,
           payload: { rejectedOnDate, dateFormat: "yyyy-MM-dd", locale: "en" },
         });
+        setRejectErrors({});
         break;
-      case "withdraw":
+      }
+      case "withdraw": {
+        const errors = validateLifecycleDate(withdrawnOnDate, loan, "Withdrawal");
+        setWithdrawErrors(errors);
+        if (Object.keys(errors).length > 0) return;
         await withdrawMut.mutateAsync({
           loanId: loan.id,
           payload: { withdrawnOnDate, dateFormat: "yyyy-MM-dd", locale: "en" },
         });
+        setWithdrawErrors({});
         break;
+      }
       case "undoApproval":
         await undoApprovalMut.mutateAsync(loan.id);
         break;
@@ -226,7 +336,7 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
     onSuccess?.();
   }, [
     confirmCommand,
-    loan.id,
+    loan,
     noteInput,
     rejectedOnDate,
     withdrawnOnDate,
@@ -493,6 +603,12 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => goToTransaction("reAmortize")}>{t("Re-Amortize")}</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => goToTransaction("reAge")}>{t("Re-Age Loan")}</DropdownMenuItem>
+                {hasReAgeTx && (
+                  <DropdownMenuItem onClick={() => goToTransaction("undoReAge")}>{t("Undo Re-Age")}</DropdownMenuItem>
+                )}
+                {hasReAmortizeTx && (
+                  <DropdownMenuItem onClick={() => goToTransaction("undoReAmortize")}>{t("Undo Re-Amortize")}</DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => goToTransaction("close-rescheduled")}>
                   {t("Close (Rescheduled)")}
                 </DropdownMenuItem>
@@ -543,60 +659,93 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
       </div>
 
       {/* Date dialog: approve / disburse / disburse-to-savings */}
-      <Dialog open={!!dateCommand} onOpenChange={(open) => !open && setDateCommand(null)}>
+      <Dialog open={!!dateCommand} onOpenChange={(open) => { if (!open) { setDateCommand(null); setDateErrors({}); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{dateCommand ? dateDialogTitles[dateCommand].title : ""}</DialogTitle>
             <DialogDescription>{dateCommand ? dateDialogTitles[dateCommand].description : ""}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="block text-sm font-medium" htmlFor="commandDate">
-                {dateCommand === "approve" ? t("Approval Date") : t("Disbursement Date")}
-              </label>
-              <Input id="commandDate" type="date" value={dateInput} onChange={(e) => setDateInput(e.target.value)} />
-            </div>
-            {dateCommand === "approve" && (
-              <>
-                <div className="flex flex-col gap-1.5">
-                  <label className="block text-sm font-medium" htmlFor="approvedAmount">
-                    {t("Approved Amount")}
-                  </label>
-                  <Input
-                    id="approvedAmount"
-                    type="number"
-                    step="0.01"
-                    value={amountInput}
-                    onChange={(e) => setAmountInput(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="block text-sm font-medium" htmlFor="expectedDisbDate">
-                    {t("Expected Disbursement Date")}
-                  </label>
-                  <Input
-                    id="expectedDisbDate"
-                    type="date"
-                    value={expectedDisbursementDate}
-                    onChange={(e) => setExpectedDisbursementDate(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-            {dateCommand === "disburse" && (
-              <div className="flex flex-col gap-1.5">
-                <label className="block text-sm font-medium" htmlFor="disbAmount">
-                  {t("Transaction Amount")}
-                </label>
-                <Input
-                  id="disbAmount"
-                  type="number"
-                  step="0.01"
-                  value={amountInput}
-                  onChange={(e) => setAmountInput(e.target.value)}
-                />
-              </div>
-            )}
+           <div className="space-y-4">
+             {dateErrors.general && (
+               <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                 <AlertCircle className="h-4 w-4 shrink-0" />
+                 {dateErrors.general}
+               </div>
+             )}
+             <div className="flex flex-col gap-1.5">
+               <label className="block text-sm font-medium" htmlFor="commandDate">
+                 {dateCommand === "approve" ? t("Approval Date") : t("Disbursement Date")}
+               </label>
+               <Input
+                 id="commandDate"
+                 type="date"
+                 value={dateInput}
+                 onChange={(e) => {
+                   setDateInput(e.target.value);
+                   setDateErrors((prev) => ({ ...prev, date: undefined }));
+                 }}
+                 className={dateErrors.date ? "border-red-500" : ""}
+               />
+               {dateErrors.date && <p className="text-xs text-red-500">{dateErrors.date}</p>}
+             </div>
+             {dateCommand === "approve" && (
+               <>
+                 <div className="flex flex-col gap-1.5">
+                   <label className="block text-sm font-medium" htmlFor="approvedAmount">
+                     {t("Approved Amount")}
+                   </label>
+                   <Input
+                     id="approvedAmount"
+                     type="number"
+                     step="0.01"
+                     value={amountInput}
+                     onChange={(e) => {
+                       setAmountInput(e.target.value);
+                       setDateErrors((prev) => ({ ...prev, amount: undefined }));
+                     }}
+                     className={dateErrors.amount ? "border-red-500" : ""}
+                   />
+                   {dateErrors.amount && <p className="text-xs text-red-500">{dateErrors.amount}</p>}
+                 </div>
+                 <div className="flex flex-col gap-1.5">
+                   <label className="block text-sm font-medium" htmlFor="expectedDisbDate">
+                     {t("Expected Disbursement Date")}
+                   </label>
+                   <Input
+                     id="expectedDisbDate"
+                     type="date"
+                     value={expectedDisbursementDate}
+                     onChange={(e) => {
+                       setExpectedDisbursementDate(e.target.value);
+                       setDateErrors((prev) => ({ ...prev, expectedDisbursementDate: undefined }));
+                     }}
+                     className={dateErrors.expectedDisbursementDate ? "border-red-500" : ""}
+                   />
+                   {dateErrors.expectedDisbursementDate && (
+                     <p className="text-xs text-red-500">{dateErrors.expectedDisbursementDate}</p>
+                   )}
+                 </div>
+               </>
+             )}
+             {dateCommand === "disburse" && (
+               <div className="flex flex-col gap-1.5">
+                 <label className="block text-sm font-medium" htmlFor="disbAmount">
+                   {t("Transaction Amount")}
+                 </label>
+                 <Input
+                   id="disbAmount"
+                   type="number"
+                   step="0.01"
+                   value={amountInput}
+                   onChange={(e) => {
+                     setAmountInput(e.target.value);
+                     setDateErrors((prev) => ({ ...prev, amount: undefined }));
+                   }}
+                   className={dateErrors.amount ? "border-red-500" : ""}
+                 />
+                 {dateErrors.amount && <p className="text-xs text-red-500">{dateErrors.amount}</p>}
+               </div>
+             )}
             <div className="flex flex-col gap-1.5">
               <label className="block text-sm font-medium" htmlFor="commandNote">
                 {t("Note")}
@@ -610,10 +759,13 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDateCommand(null)} disabled={isMutating}>
+              <Button variant="outline" onClick={() => { setDateCommand(null); setDateErrors({}); }} disabled={isMutating}>
                 {t("Cancel")}
               </Button>
-              <Button onClick={handleDateCommand} disabled={isMutating}>
+              <Button
+                onClick={handleDateCommand}
+                disabled={isMutating || !dateInput}
+              >
                 {isMutating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t("Confirm")}
               </Button>
@@ -623,28 +775,39 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
       </Dialog>
 
       {/* Confirm dialogs */}
-      <Dialog open={confirmCommand === "reject"} onOpenChange={(open) => !open && setConfirmCommand(null)}>
+      <Dialog open={confirmCommand === "reject"} onOpenChange={(open) => !open && (setConfirmCommand(null), setRejectErrors({}))}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("Reject Loan")}</DialogTitle>
             <DialogDescription>{`${t("Reject loan")} ${loan.accountNo ?? `#${loan.id}`}?`}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {rejectErrors.date && (
+              <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {rejectErrors.date}
+              </div>
+            )}
             <div className="flex flex-col gap-1.5">
               <label className="block text-sm font-medium" htmlFor="rejectedOnDate">
-                {t("Rejected On Date")}
+                {t("Rejected On Date")} *
               </label>
               <Input
                 id="rejectedOnDate"
                 type="date"
                 value={rejectedOnDate}
-                onChange={(e) => setRejectedOnDate(e.target.value)}
+                onChange={(e) => {
+                  setRejectedOnDate(e.target.value);
+                  setRejectErrors((prev) => ({ ...prev, date: undefined }));
+                }}
                 disabled={rejectMut.isPending}
+                className={rejectErrors.date ? "border-red-500" : ""}
                 required
               />
+              {rejectErrors.date && <p className="text-xs text-red-500">{rejectErrors.date}</p>}
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setConfirmCommand(null)} disabled={rejectMut.isPending}>
+              <Button variant="outline" onClick={() => { setConfirmCommand(null); setRejectErrors({}); }} disabled={rejectMut.isPending}>
                 {t("Cancel")}
               </Button>
               <Button
@@ -659,28 +822,39 @@ const LoanCommands: FC<LoanCommandsProps> = ({ loan, onSuccess }) => {
           </div>
         </DialogContent>
       </Dialog>
-      <Dialog open={confirmCommand === "withdraw"} onOpenChange={(open) => !open && setConfirmCommand(null)}>
+      <Dialog open={confirmCommand === "withdraw"} onOpenChange={(open) => !open && (setConfirmCommand(null), setWithdrawErrors({}))}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("Withdraw Loan")}</DialogTitle>
             <DialogDescription>{`${t("Withdraw loan application")} ${loan.accountNo ?? `#${loan.id}`}?`}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {withdrawErrors.date && (
+              <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {withdrawErrors.date}
+              </div>
+            )}
             <div className="flex flex-col gap-1.5">
               <label className="block text-sm font-medium" htmlFor="withdrawnOnDate">
-                {t("Withdrawn On Date")}
+                {t("Withdrawn On Date")} *
               </label>
               <Input
                 id="withdrawnOnDate"
                 type="date"
                 value={withdrawnOnDate}
-                onChange={(e) => setWithdrawnOnDate(e.target.value)}
+                onChange={(e) => {
+                  setWithdrawnOnDate(e.target.value);
+                  setWithdrawErrors((prev) => ({ ...prev, date: undefined }));
+                }}
                 disabled={withdrawMut.isPending}
+                className={withdrawErrors.date ? "border-red-500" : ""}
                 required
               />
+              {withdrawErrors.date && <p className="text-xs text-red-500">{withdrawErrors.date}</p>}
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setConfirmCommand(null)} disabled={withdrawMut.isPending}>
+              <Button variant="outline" onClick={() => { setConfirmCommand(null); setWithdrawErrors({}); }} disabled={withdrawMut.isPending}>
                 {t("Cancel")}
               </Button>
               <Button

@@ -1,17 +1,18 @@
 import { type FC, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Undo2, ArrowLeftRight, Loader2 } from "lucide-react";
+import { Undo2, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { useClientTransactions, useUndoClientTransaction } from "../hooks/useClientTransactions";
 import type { ClientTransaction } from "../api/transactions";
 import { formatClientDate } from "../utils/client";
 import type { ColumnDef } from "@/components/shared/DataTable";
 
-const formatCurrency = (n?: number, currency = "USD") =>
-  n != null ? new Intl.NumberFormat("en-US", { style: "currency", currency: currency }).format(n) : "—";
+const formatCurrency = (n?: number, currencyCode?: string) =>
+  n != null ? new Intl.NumberFormat("en-US", { style: "currency", currency: currencyCode ?? "USD" }).format(n) : "—";
 
 interface ClientTransactionsProps {
   clientId: number;
@@ -29,9 +30,7 @@ const ClientTransactions: FC<ClientTransactionsProps> = ({ clientId }) => {
     async (transactionId: number) => {
       setUndoingId(transactionId);
       try {
-        if (window.confirm(t("clients.transactions.undoConfirm"))) {
-          await undoMutation.mutateAsync({ clientId, transactionId });
-        }
+        await undoMutation.mutateAsync({ clientId, transactionId });
       } finally {
         setUndoingId(null);
       }
@@ -89,16 +88,12 @@ const ClientTransactions: FC<ClientTransactionsProps> = ({ clientId }) => {
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                handleUndo(row.id);
+                setUndoingId(row.id);
               }}
-              disabled={undoingId === row.id}
+              disabled={undoMutation.isPending}
               title={t("clients.transactions.undoTransaction")}
             >
-              {undoingId === row.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Undo2 className="h-4 w-4 text-amber-500" />
-              )}
+              <Undo2 className="h-4 w-4 text-amber-500" />
             </Button>
           )}
         </div>
@@ -126,6 +121,17 @@ const ClientTransactions: FC<ClientTransactionsProps> = ({ clientId }) => {
           />
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={undoingId !== null}
+        onOpenChange={() => setUndoingId(null)}
+        title={t("clients.transactions.undoTitle")}
+        description={t("clients.transactions.undoConfirm")}
+        onConfirm={() => undoingId && handleUndo(undoingId)}
+        variant="default"
+        confirmLabel={t("clients.transactions.undo")}
+        loading={undoMutation.isPending}
+      />
     </div>
   );
 };

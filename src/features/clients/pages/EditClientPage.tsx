@@ -25,7 +25,7 @@ const EditClientPage: FC = () => {
       if (!client) return;
       await updateMutation.mutateAsync({
         clientId: client.id,
-        payload: values as any,
+        payload: values,
       });
       navigate(`/clients/${client.id}`);
     },

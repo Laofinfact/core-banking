@@ -2,7 +2,7 @@ import { type FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,7 +13,8 @@ import { LoanProductSearch } from "@/components/shared/LoanProductSearch";
 import { LoanOriginatorPicker } from "@/features/loan-originators";
 import type { LoanOriginator } from "@/features/loan-originators";
 import { createLoanSchema, type CreateLoanFormValues } from "../schemas/loan.schema";
-import type { Loan, LoanTemplate } from "../types/loan";
+import type { Loan, LoanTemplate, LoanCollateralCreateRequest } from "../types/loan";
+import { useCollateralTemplate } from "../hooks/useLoanCollateral";
 import { currentDate } from "@/lib/utils";
 
 interface LoanFormProps {
@@ -52,6 +53,7 @@ interface LoanFormProps {
 export type FormFields = CreateLoanFormValues & {
   repaymentsStartingFromDate?: string;
   originators?: Array<{ id: number; name?: string | null }>;
+  collateral?: LoanCollateralCreateRequest[];
 };
 
 const ChargeCheckbox: React.FC<{
@@ -145,8 +147,11 @@ const LoanForm: FC<LoanFormProps> = ({
       interestType: loan?.interestType?.id ?? undefined,
       amortizationType: loan?.amortizationType?.id ?? undefined,
       interestCalculationPeriodType: loan?.interestCalculationPeriodType?.id ?? undefined,
-      expectedDisbursementDate: currentDate(Array.isArray(loan?.expectedDisbursementDate) ? undefined : loan?.expectedDisbursementDate) || currentDate(),
-      submittedOnDate: currentDate(Array.isArray(loan?.submittedOnDate) ? undefined : loan?.submittedOnDate) || currentDate(),
+      expectedDisbursementDate:
+        currentDate(Array.isArray(loan?.expectedDisbursementDate) ? undefined : loan?.expectedDisbursementDate) ||
+        currentDate(),
+      submittedOnDate:
+        currentDate(Array.isArray(loan?.submittedOnDate) ? undefined : loan?.submittedOnDate) || currentDate(),
       transactionProcessingStrategyCode: loan?.transactionProcessingStrategyCode ?? "mifos-standard-strategy",
       loanPurposeId: undefined,
       loanOfficerId: undefined,
@@ -177,6 +182,8 @@ const LoanForm: FC<LoanFormProps> = ({
   const productIdVal = watch("productId");
   const clientIdVal = watch("clientId");
   const [selectedOriginators, setSelectedOriginators] = useState<LoanOriginator[]>([]);
+  const [collateralItems, setCollateralItems] = useState<LoanCollateralCreateRequest[]>([]);
+  const { data: collateralTemplate } = useCollateralTemplate();
 
   // Per-field read-only matrix (doc §22 / §16.1):
   //   clientId & loanProductId  → locked after submission
@@ -265,8 +272,34 @@ const LoanForm: FC<LoanFormProps> = ({
     setValue("repaymentFrequencyType", v, { shouldValidate: true });
   };
 
+  const handleAddCollateral = useCallback(() => {
+    setCollateralItems((prev) => [...prev, { collateralTypeId: 0, value: 0, description: "" }]);
+  }, []);
+
+  const handleRemoveCollateral = useCallback((index: number) => {
+    setCollateralItems((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleCollateralChange = useCallback(
+    (index: number, field: keyof LoanCollateralCreateRequest, value: number | string) => {
+      setCollateralItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
+    },
+    [],
+  );
+
+  const collateralTypeOptions = collateralTemplate?.loanCollateralOptions ?? [];
+
   return (
-    <form onSubmit={handleSubmit((values) => onSubmit(values as FormFields))} className="space-y-6">
+    <form
+      onSubmit={handleSubmit((values) => {
+        const payload = { ...values } as FormFields & { collateral?: LoanCollateralCreateRequest[] };
+        if (collateralItems.length > 0 && collateralItems.every((c) => c.collateralTypeId > 0 && c.value > 0)) {
+          payload.collateral = collateralItems.filter((c) => c.collateralTypeId > 0 && c.value > 0);
+        }
+        onSubmit(payload);
+      })}
+      className="space-y-6"
+    >
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
           {error}
@@ -337,7 +370,7 @@ const LoanForm: FC<LoanFormProps> = ({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-               <SelectContent>
+              <SelectContent>
                 {(template?.termFrequencyTypeOptions ?? []).length > 0
                   ? (template?.termFrequencyTypeOptions ?? []).map((o) => (
                       <SelectItem key={o.id} value={String(o.id)}>
@@ -430,18 +463,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(interestTypeOptions ?? []).length > 0
-                  ? (interestTypeOptions ?? []).map((o) => (
-                      <SelectItem key={o.id} value={String(o.id)}>
-                        {o.value ?? o.name ?? ""}
-                      </SelectItem>
-                    ))
-                  : (
-                      <>
-                        <SelectItem value="0">{t("Declining Balance")}</SelectItem>
-                        <SelectItem value="1">{t("Flat")}</SelectItem>
-                      </>
-                    )}
+                {(interestTypeOptions ?? []).length > 0 ? (
+                  (interestTypeOptions ?? []).map((o) => (
+                    <SelectItem key={o.id} value={String(o.id)}>
+                      {o.value ?? o.name ?? ""}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="0">{t("Declining Balance")}</SelectItem>
+                    <SelectItem value="1">{t("Flat")}</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -456,18 +489,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(interestRateFrequencyTypeOptions ?? []).length > 0
-                  ? (interestRateFrequencyTypeOptions ?? []).map((o) => (
-                      <SelectItem key={o.id} value={String(o.id)}>
-                        {o.value ?? o.name ?? ""}
-                      </SelectItem>
-                    ))
-                  : (
-                      <>
-                        <SelectItem value="2">{t("Per Month")}</SelectItem>
-                        <SelectItem value="3">{t("Per Year")}</SelectItem>
-                      </>
-                    )}
+                {(interestRateFrequencyTypeOptions ?? []).length > 0 ? (
+                  (interestRateFrequencyTypeOptions ?? []).map((o) => (
+                    <SelectItem key={o.id} value={String(o.id)}>
+                      {o.value ?? o.name ?? ""}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="2">{t("Per Month")}</SelectItem>
+                    <SelectItem value="3">{t("Per Year")}</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -482,18 +515,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(interestCalculationPeriodTypeOptions ?? []).length > 0
-                  ? (interestCalculationPeriodTypeOptions ?? []).map((o) => (
-                      <SelectItem key={o.id} value={String(o.id)}>
-                        {o.value ?? o.name ?? ""}
-                      </SelectItem>
-                    ))
-                  : (
-                      <>
-                        <SelectItem value="0">{t("Daily")}</SelectItem>
-                        <SelectItem value="1">{t("Same as Repayment")}</SelectItem>
-                      </>
-                    )}
+                {(interestCalculationPeriodTypeOptions ?? []).length > 0 ? (
+                  (interestCalculationPeriodTypeOptions ?? []).map((o) => (
+                    <SelectItem key={o.id} value={String(o.id)}>
+                      {o.value ?? o.name ?? ""}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="0">{t("Daily")}</SelectItem>
+                    <SelectItem value="1">{t("Same as Repayment")}</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -508,18 +541,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(amortizationTypeOptions ?? []).length > 0
-                  ? (amortizationTypeOptions ?? []).map((o) => (
-                      <SelectItem key={o.id} value={String(o.id)}>
-                        {o.value ?? o.name ?? ""}
-                      </SelectItem>
-                    ))
-                  : (
-                      <>
-                        <SelectItem value="0">{t("Equal Principal")}</SelectItem>
-                        <SelectItem value="1">{t("Equal Installments")}</SelectItem>
-                      </>
-                    )}
+                {(amortizationTypeOptions ?? []).length > 0 ? (
+                  (amortizationTypeOptions ?? []).map((o) => (
+                    <SelectItem key={o.id} value={String(o.id)}>
+                      {o.value ?? o.name ?? ""}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="0">{t("Equal Principal")}</SelectItem>
+                    <SelectItem value="1">{t("Equal Installments")}</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -707,20 +740,20 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue placeholder={t("Select")} />
               </SelectTrigger>
               <SelectContent>
-                {(daysInYearTypeOptions ?? []).length > 0
-                  ? (daysInYearTypeOptions ?? []).map((o) => (
-                      <SelectItem key={o.id} value={String(o.id)}>
-                        {o.value ?? o.name ?? ""}
-                      </SelectItem>
-                    ))
-                  : (
-                      <>
-                        <SelectItem value="1">{t("Actual")}</SelectItem>
-                        <SelectItem value="360">{t("360 Days")}</SelectItem>
-                        <SelectItem value="364">{t("364 Days")}</SelectItem>
-                        <SelectItem value="365">{t("365 Days")}</SelectItem>
-                      </>
-                    )}
+                {(daysInYearTypeOptions ?? []).length > 0 ? (
+                  (daysInYearTypeOptions ?? []).map((o) => (
+                    <SelectItem key={o.id} value={String(o.id)}>
+                      {o.value ?? o.name ?? ""}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="1">{t("Actual")}</SelectItem>
+                    <SelectItem value="360">{t("360 Days")}</SelectItem>
+                    <SelectItem value="364">{t("364 Days")}</SelectItem>
+                    <SelectItem value="365">{t("365 Days")}</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -735,18 +768,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue placeholder={t("Select")} />
               </SelectTrigger>
               <SelectContent>
-                {(daysInMonthTypeOptions ?? []).length > 0
-                  ? (daysInMonthTypeOptions ?? []).map((o) => (
-                      <SelectItem key={o.id} value={String(o.id)}>
-                        {o.value ?? o.name ?? ""}
-                      </SelectItem>
-                    ))
-                  : (
-                      <>
-                        <SelectItem value="1">{t("Actual")}</SelectItem>
-                        <SelectItem value="30">{t("30 Days")}</SelectItem>
-                      </>
-                    )}
+                {(daysInMonthTypeOptions ?? []).length > 0 ? (
+                  (daysInMonthTypeOptions ?? []).map((o) => (
+                    <SelectItem key={o.id} value={String(o.id)}>
+                      {o.value ?? o.name ?? ""}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="1">{t("Actual")}</SelectItem>
+                    <SelectItem value="30">{t("30 Days")}</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -950,7 +983,9 @@ const LoanForm: FC<LoanFormProps> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-500">
-              {t("Configure tranche details for multi-disbursement loans. Each tranche represents a separate disbursement.")}
+              {t(
+                "Configure tranche details for multi-disbursement loans. Each tranche represents a separate disbursement.",
+              )}
             </p>
             <div className="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-400 text-center">
               {t("Tranche configuration editor — Custom child component (not yet implemented)")}
@@ -993,9 +1028,94 @@ const LoanForm: FC<LoanFormProps> = ({
               onChange={setSelectedOriginators}
               disabled={isSubmitting}
             />
-              <p className="mt-2 text-xs text-gray-500">
-                {t("Link the external party (merchant, broker, affiliate, platform) that sourced this application.")}
+            <p className="mt-2 text-xs text-gray-500">
+              {t("Link the external party (merchant, broker, affiliate, platform) that sourced this application.")}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Collateral (create only) */}
+      {mode === "create" && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">{t("Collateral")}</CardTitle>
+            <Button type="button" variant="outline" size="sm" onClick={handleAddCollateral} disabled={isSubmitting}>
+              <Plus className="mr-1 h-4 w-4" />
+              {t("Add Collateral")}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {collateralItems.length === 0 ? (
+              <p className="text-center text-sm text-gray-400">
+                {t("No collateral items. Collateral is optional and can be added later.")}
               </p>
+            ) : (
+              collateralItems.map((item, index) => (
+                <div key={index} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {t("Collateral Item")} #{index + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveCollateral(index)}
+                      disabled={isSubmitting}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium">{t("Collateral Type")} *</label>
+                      <Select
+                        value={item.collateralTypeId ? String(item.collateralTypeId) : ""}
+                        onValueChange={(v) => handleCollateralChange(index, "collateralTypeId", Number(v))}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("Select type")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {collateralTypeOptions.map((opt) => (
+                            <SelectItem key={opt.id} value={String(opt.id)}>
+                              {opt.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {item.collateralTypeId === 0 && (
+                        <p className="text-xs text-red-500">{t("Collateral type is required")}</p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium">{t("Value")} *</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={item.value || ""}
+                        onChange={(e) => handleCollateralChange(index, "value", Number(e.target.value))}
+                        disabled={isSubmitting}
+                        placeholder={t("Collateral value")}
+                      />
+                      {item.value <= 0 && <p className="text-xs text-red-500">{t("Value must be greater than 0")}</p>}
+                    </div>
+                    <div className="col-span-2 space-y-1.5">
+                      <label className="block text-sm font-medium">{t("Description")}</label>
+                      <Input
+                        value={item.description || ""}
+                        onChange={(e) => handleCollateralChange(index, "description", e.target.value)}
+                        disabled={isSubmitting}
+                        placeholder={t("Brief description (optional, max 500 chars)")}
+                        maxLength={500}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       )}
@@ -1003,16 +1123,16 @@ const LoanForm: FC<LoanFormProps> = ({
       {/* Actions */}
       <div className="flex items-center justify-end gap-3">
         <Button type="submit" disabled={isSubmitting} className="bg-[#D32F2F] hover:bg-red-700">
-            {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {mode === "create" ? t("Creating...") : t("Saving...")}
-              </span>
-            ) : mode === "create" ? (
-              t("Create Loan")
-            ) : (
-              t("Save Changes")
-            )}
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {mode === "create" ? t("Creating...") : t("Saving...")}
+            </span>
+          ) : mode === "create" ? (
+            t("Create Loan")
+          ) : (
+            t("Save Changes")
+          )}
         </Button>
         {onPreviewSchedule && (
           <Button
@@ -1021,14 +1141,14 @@ const LoanForm: FC<LoanFormProps> = ({
             disabled={isSubmitting || previewLoading}
             onClick={() => onPreviewSchedule(getValues())}
           >
-              {previewLoading ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {t("Calculating...")}
-                </span>
-              ) : (
-                t("Preview Schedule")
-              )}
+            {previewLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("Calculating...")}
+              </span>
+            ) : (
+              t("Preview Schedule")
+            )}
           </Button>
         )}
         <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => window.history.back()}>

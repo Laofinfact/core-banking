@@ -7,7 +7,6 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +14,7 @@ import { z } from "zod";
 import type { ColumnDef } from "@/components/shared/DataTable";
 import {
   useClientCollaterals,
-  useClientCollateralTemplate,
+  useCollateralOptions,
   useCreateClientCollateral,
   useUpdateClientCollateral,
   useDeleteClientCollateral,
@@ -35,7 +34,7 @@ interface ClientCollateralsProps {
 const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
   const { t } = useTranslation();
   const { data: collaterals, isLoading } = useClientCollaterals(clientId);
-  const { data: template } = useClientCollateralTemplate(clientId);
+  const { data: options } = useCollateralOptions();
   const createMutation = useCreateClientCollateral();
   const updateMutation = useUpdateClientCollateral();
   const deleteMutation = useDeleteClientCollateral();
@@ -55,7 +54,7 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
 
   const openCreate = useCallback(() => {
     setEditingId(null);
-    reset({ collateralId: undefined as any, quantity: undefined as any });
+    reset({ collateralId: undefined as unknown as number, quantity: undefined as unknown as number });
     setDialogOpen(true);
   }, [reset]);
 
@@ -183,15 +182,7 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
             <div className="flex flex-col gap-1.5">
               <label className="block text-sm font-medium">{t("clients.collaterals.collateralType")} {editingId ? "" : "*"}</label>
               <Select
-                defaultValue={
-                  editingId
-                    ? String(
-                        (template?.collateralOptions ?? []).find(
-                          (c) => c.id === (collaterals ?? []).find((cl) => cl.id === editingId)?.collateralId,
-                        )?.id ?? "",
-                      )
-                    : ""
-                }
+                value={editingId ? undefined : ""}
                 onValueChange={(v) => setValue("collateralId", Number(v), { shouldValidate: true })}
                 disabled={!!editingId}
               >
@@ -199,7 +190,7 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
                   <SelectValue placeholder={t("clients.collaterals.selectType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {template?.collateralOptions?.map((o) => (
+                  {options?.map((o) => (
                     <SelectItem key={o.id} value={String(o.id)}>
                       {o.name}
                     </SelectItem>

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchClientCollaterals,
-  fetchClientCollateralTemplate,
+  fetchCollateralOptions,
   createClientCollateral,
   updateClientCollateral,
   deleteClientCollateral,
@@ -11,7 +11,7 @@ import { clientKeys } from "./useClients";
 
 export const clientCollateralKeys = {
   all: (clientId: number | string) => [...clientKeys.detail(clientId), "collaterals"] as const,
-  template: (clientId: number | string) => [...clientKeys.detail(clientId), "collaterals", "template"] as const,
+  options: ["collaterals", "options"] as const,
 };
 
 export function useClientCollaterals(clientId: number | string | undefined) {
@@ -22,11 +22,14 @@ export function useClientCollaterals(clientId: number | string | undefined) {
   });
 }
 
-export function useClientCollateralTemplate(clientId: number | string | undefined) {
+/**
+ * Fetch available collateral products from /collateral-management (not client-specific).
+ */
+export function useCollateralOptions() {
   return useQuery({
-    queryKey: clientCollateralKeys.template(clientId!),
-    queryFn: () => fetchClientCollateralTemplate(clientId!),
-    enabled: !!clientId,
+    queryKey: clientCollateralKeys.options,
+    queryFn: fetchCollateralOptions,
+    staleTime: 5 * 60_000,
   });
 }
 

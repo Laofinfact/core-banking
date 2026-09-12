@@ -1,11 +1,10 @@
 import { type FC, useState, useCallback } from "react";
 import { Plus, Pencil, Trash2, StickyNote, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -78,11 +77,11 @@ const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <StickyNote className="h-5 w-5" />
-          {t("Notes")}
+          {t("clients.notes.title")}
         </h3>
         <Button onClick={openCreate} size="sm">
           <Plus className="mr-1 h-4 w-4" />
-          {t("Add Note")}
+          {t("clients.notes.addNote")}
         </Button>
       </div>
 
@@ -94,7 +93,7 @@ const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
         <Card>
           <CardContent className="py-8 text-center">
             <StickyNote className="mx-auto h-8 w-8 text-gray-300 mb-2" />
-            <p className="text-sm text-gray-500">{t("No notes yet.")}</p>
+            <p className="text-sm text-gray-500">{t("clients.notes.noNotes")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -131,15 +130,15 @@ const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? t("Edit Note") : t("Add Note")}</DialogTitle>
-            <DialogDescription>{t("Enter note content.")}</DialogDescription>
+            <DialogTitle>{editingId ? t("clients.notes.editNote") : t("clients.notes.addNote")}</DialogTitle>
+            <DialogDescription>{t("clients.notes.enterDetails")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <label className="block text-sm font-medium" htmlFor="note">
-                {t("Note")} *
+              <label className="block text-sm font-medium" htmlFor="note-content">
+                {t("clients.notes.content")} *
               </label>
-              <Textarea id="note" {...register("note")} rows={5} placeholder={t("Write your note here...")} />
+              <Textarea id="note-content" {...register("note")} rows={5} placeholder={t("clients.notes.placeholder")} />
               {errors.note && <p className="text-xs text-red-500">{errors.note.message}</p>}
             </div>
             <Button
@@ -150,7 +149,7 @@ const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
               {(createMutation.isPending || updateMutation.isPending) && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {editingId ? t("Update") : t("Create")}
+              {editingId ? t("clients.notes.update") : t("clients.notes.create")}
             </Button>
           </form>
         </DialogContent>
@@ -159,7 +158,7 @@ const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
       <Dialog open={!!viewingNote} onOpenChange={() => setViewingNote(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("Note")}</DialogTitle>
+            <DialogTitle>{t("clients.notes.viewNote")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm whitespace-pre-wrap">{viewingNote?.note}</p>
           {viewingNote?.createdOn && <p className="text-xs text-gray-400">{formatClientDate(viewingNote.createdOn)}</p>}
@@ -169,11 +168,11 @@ const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title={t("Delete Note")}
-        description={t("Are you sure? This cannot be undone.")}
+        title={t("clients.notes.deleteNote")}
+        description={t("clients.notes.deleteConfirmation")}
         onConfirm={handleDelete}
         variant="destructive"
-        confirmLabel={t("Delete")}
+        confirmLabel={t("clients.notes.delete")}
         loading={deleteMutation.isPending}
       />
     </div>

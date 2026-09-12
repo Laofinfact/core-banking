@@ -26,18 +26,16 @@ export interface ClientCollateralUpdateRequest {
   locale?: string;
 }
 
-export interface ClientCollateralTemplate {
-  collateralOptions: Array<{
-    id: number;
-    name: string;
-    description?: string;
-    position?: number;
-  }>;
-}
-
 export interface ClientCollateralCommandResponse {
   clientId: number;
   resourceId: number;
+}
+
+export interface CollateralOption {
+  id: number;
+  name: string;
+  description?: string;
+  position?: number;
 }
 
 // ─── API Functions ─────────────────────────────────────────────────────
@@ -52,11 +50,11 @@ export async function fetchClientCollaterals(clientId: number | string): Promise
 }
 
 /**
- * GET /clients/{clientId}/collaterals/template
- * Get the template for creating a collateral (loads collateral options).
+ * GET /collateral-management
+ * Fetch all available collateral products (NOT client-specific).
  */
-export async function fetchClientCollateralTemplate(clientId: number | string): Promise<ClientCollateralTemplate> {
-  const { data } = await client.get<ClientCollateralTemplate>(`/clients/${clientId}/collaterals/template`);
+export async function fetchCollateralOptions(): Promise<CollateralOption[]> {
+  const { data } = await client.get<CollateralOption[]>("/collateral-management");
   return data;
 }
 

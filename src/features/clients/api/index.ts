@@ -74,7 +74,7 @@ export type { ClientNote, ClientNoteRequest, ClientNoteCommandResponse } from ".
 export {
   fetchClientCollaterals,
   fetchClientCollateral,
-  fetchClientCollateralTemplate,
+  fetchCollateralOptions,
   createClientCollateral,
   updateClientCollateral,
   deleteClientCollateral,
@@ -83,7 +83,7 @@ export type {
   ClientCollateral,
   ClientCollateralRequest,
   ClientCollateralUpdateRequest,
-  ClientCollateralTemplate,
+  CollateralOption,
   ClientCollateralCommandResponse,
 } from "./collaterals";
 

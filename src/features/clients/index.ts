@@ -13,6 +13,21 @@ export type {
   ClientTimeline,
   LegalForm,
   Gender,
+  ClientRejectRequest,
+  ClientWithdrawRequest,
+  ClientCloseRequest,
+  ClientReactivateRequest,
+  ClientUndoRejectionRequest,
+  ClientUndoWithdrawalRequest,
+  ClientAssignStaffRequest,
+  ClientUpdateSavingsAccountRequest,
+  ClientProposeTransferRequest,
+  ClientAcceptTransferRequest,
+  ClientTransferActionRequest,
+  ClientNonPerson,
+  ClientAddressInput,
+  ClientFamilyMemberInput,
+  ClientCommandResponse,
 } from "./types/client";
 
 // Constants
@@ -33,7 +48,13 @@ export {
   rejectClientSchema,
   withdrawClientSchema,
   reactivateClientSchema,
-  reopenedDateSchema,
+  undoRejectionSchema,
+  undoWithdrawalSchema,
+  assignStaffSchema,
+  updateSavingsAccountSchema,
+  proposeTransferSchema,
+  acceptTransferSchema,
+  transferActionSchema,
 } from "./schemas/client.schema";
 export type {
   CreateClientFormValues,
@@ -45,6 +66,11 @@ export type {
   ReactivateClientFormValues,
   UndoRejectClientFormValues,
   UndoWithdrawClientFormValues,
+  AssignStaffFormValues,
+  UpdateSavingsAccountFormValues,
+  ProposeTransferFormValues,
+  AcceptTransferFormValues,
+  TransferActionFormValues,
 } from "./schemas/client.schema";
 
 // Utils
@@ -121,6 +147,7 @@ export {
   fetchClientChargesTemplate,
   createClientCharge,
   waiveClientCharge,
+  payClientCharge,
   deleteClientCharge,
 } from "./api/charges";
 export type {
@@ -150,7 +177,7 @@ export type { ClientNote, ClientNoteRequest, ClientNoteCommandResponse } from ".
 export {
   fetchClientCollaterals,
   fetchClientCollateral,
-  fetchClientCollateralTemplate,
+  fetchCollateralOptions,
   createClientCollateral,
   updateClientCollateral,
   deleteClientCollateral,
@@ -159,7 +186,7 @@ export type {
   ClientCollateral,
   ClientCollateralRequest,
   ClientCollateralUpdateRequest,
-  ClientCollateralTemplate,
+  CollateralOption,
   ClientCollateralCommandResponse,
 } from "./api/collaterals";
 
@@ -188,6 +215,7 @@ export { useClientAccounts } from "./hooks/useClientAccounts";
 // Hooks — Sub-entities
 export {
   useClientIdentifiers,
+  useClientIdentifierTemplate,
   useCreateClientIdentifier,
   useUpdateClientIdentifier,
   useDeleteClientIdentifier,
@@ -203,6 +231,7 @@ export {
 } from "./hooks/useClientAddresses";
 export {
   useClientFamilyMembers,
+  useClientFamilyMemberTemplate,
   useCreateClientFamilyMember,
   useUpdateClientFamilyMember,
   useDeleteClientFamilyMember,
@@ -210,6 +239,7 @@ export {
 } from "./hooks/useClientFamilyMembers";
 export {
   useClientCharges,
+  useClientChargesTemplate,
   useCreateClientCharge,
   usePayClientCharge,
   useWaiveClientCharge,
@@ -218,6 +248,7 @@ export {
 } from "./hooks/useClientCharges";
 export {
   useClientDocuments,
+  useClientDocument,
   useCreateClientDocument,
   useUpdateClientDocument,
   useDeleteClientDocument,
@@ -232,6 +263,7 @@ export {
 } from "./hooks/useClientNotes";
 export {
   useClientCollaterals,
+  useCollateralOptions,
   useCreateClientCollateral,
   useUpdateClientCollateral,
   useDeleteClientCollateral,
@@ -255,6 +287,20 @@ export {
   useUndoRejectClient,
   useUndoWithdrawClient,
 } from "./hooks/useClientCommands";
+
+// Hooks — Staff & Savings
+export { useAssignStaff } from "./hooks/useAssignStaff";
+export { useUnassignStaff } from "./hooks/useUnassignStaff";
+export { useUpdateSavingsAccount } from "./hooks/useUpdateSavingsAccount";
+
+// Hooks — Transfer
+export {
+  useProposeClientTransfer,
+  useAcceptClientTransfer,
+  useRejectClientTransfer,
+  useWithdrawClientTransfer,
+  useProposeAndAcceptClientTransfer,
+} from "./hooks/useClientTransfer";
 
 // Components
 export { default as ClientTable } from "./components/ClientTable";

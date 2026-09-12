@@ -11,7 +11,7 @@ export function useActivateClient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ clientId, payload = {} }: { clientId: number | string; payload?: ClientActivateRequest }) =>
+    mutationFn: ({ clientId, payload }: { clientId: number | string; payload: ClientActivateRequest }) =>
       activateClient(clientId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: clientKeys.all });

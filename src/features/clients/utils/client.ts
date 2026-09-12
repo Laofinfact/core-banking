@@ -1,5 +1,4 @@
 import type { Client } from "../types/client";
-import { CLIENT_STATUS_LABELS } from "../constants/status";
 
 /** Get a human-readable full name from a Client */
 export function getClientDisplayName(client: Client): string {

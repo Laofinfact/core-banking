@@ -1,9 +1,5 @@
 import client from "@/api/client";
 
-/**
- * Convert yyyy-MM-dd (HTML date input) → yyyy-MM-dd (format).
- * Returns undefined if the input is empty or already in format.
- */
 import type {
   Client,
   ClientListResponse,
@@ -16,7 +12,8 @@ import type {
   ClientWithdrawRequest,
   ClientCloseRequest,
   ClientReactivateRequest,
-  ClientReopenedRequest,
+  ClientUndoRejectionRequest,
+  ClientUndoWithdrawalRequest,
   ClientAssignStaffRequest,
   ClientUpdateSavingsAccountRequest,
   ClientProposeTransferRequest,
@@ -57,26 +54,13 @@ export async function updateClient(
   return data;
 }
 
-// ─── Activate Client ──────────────────────────────────────────
-export async function activateClient(
-  clientId: number | string,
-  payload: ClientActivateRequest = {},
-): Promise<{ clientId: number; resourceId: number }> {
-  const { data } = await client.post<{ clientId: number; resourceId: number }>(`/clients/${clientId}`, null, {
-    params: { command: "activate", ...payload },
-  });
-  return data;
-}
-
-// ─── Delete Client ────────────────────────────────────────────
+// ─── Delete Client (only PENDING) ─────────────────────────────
 export async function deleteClient(clientId: number | string): Promise<{ clientId: number; resourceId: number }> {
   const { data } = await client.delete<{ clientId: number; resourceId: number }>(`/clients/${clientId}`);
   return data;
 }
 
 // ─── Client Accounts Overview ──────────────────────────────────
-// GET /clients/{clientId}/accounts — returns loanAccounts[] and savingsAccounts[]
-
 export interface ClientLoanAccount {
   id: number;
   accountNo: string;
@@ -94,7 +78,7 @@ export interface ClientLoanAccount {
   };
   loanType?: { id: number; code: string; description: string };
   loanCycle: number;
-  currency: { code: string; name: string; decimalPlaces: number; displaySymbol: string };
+  currency: { code: string; name: string; decimalPlaces: number; displaySymbol?: string };
   originalLoan?: number;
   loanBalance?: number;
   amountPaid?: number;
@@ -117,7 +101,7 @@ export interface ClientSavingsAccount {
     closed: boolean;
     rejected: boolean;
   };
-  currency: { code: string; name: string; decimalPlaces: number; displaySymbol: string };
+  currency: { code: string; name: string; decimalPlaces: number; displaySymbol?: string };
   accountBalance: number;
   totalDeposits?: number;
   totalWithdrawals?: number;
@@ -135,54 +119,132 @@ export async function fetchClientAccounts(clientId: number | string): Promise<Cl
 }
 
 // ─── Client Template ──────────────────────────────────────────
-export async function fetchClientTemplate(): Promise<ClientTemplate> {
-  const { data } = await client.get<ClientTemplate>("/clients/template");
+/**
+ * GET /clients/template
+ * Supports commandParam: close, acceptTransfer, reject, withdraw
+ */
+export async function fetchClientTemplate(commandParam?: string): Promise<ClientTemplate> {
+  const params = commandParam ? { commandParam } : {};
+  const { data } = await client.get<ClientTemplate>("/clients/template", { params });
   return data;
 }
 
-// ─── Client Commands ──────────────────────────────────────────
-export async function rejectClient(clientId: number | string): Promise<{ clientId: number; resourceId: number }> {
-  const { data } = await client.post<{ clientId: number; resourceId: number }>(`/clients/${clientId}`, null, {
-    params: { command: "reject" },
-  });
+// ─── Activate Client ──────────────────────────────────────────
+/**
+ * POST /clients/{clientId}?command=activate
+ * Body: { activationDate, dateFormat, locale }
+ */
+export async function activateClient(
+  clientId: number | string,
+  payload: ClientActivateRequest,
+): Promise<{ officeId: number; clientId: number; resourceId: number }> {
+  const { data } = await client.post<{ officeId: number; clientId: number; resourceId: number }>(
+    `/clients/${clientId}`,
+    payload,
+    { params: { command: "activate" } },
+  );
   return data;
 }
 
-export async function withdrawClient(clientId: number | string): Promise<{ clientId: number; resourceId: number }> {
-  const { data } = await client.post<{ clientId: number; resourceId: number }>(`/clients/${clientId}`, null, {
-    params: { command: "withdraw" },
-  });
+// ─── Reject Client (PENDING → REJECTED) ──────────────────────
+/**
+ * POST /clients/{clientId}?command=reject
+ * Body: { rejectionDate, rejectionReasonId, dateFormat, locale }
+ */
+export async function rejectClient(
+  clientId: number | string,
+  payload: ClientRejectRequest,
+): Promise<{ officeId: number; clientId: number; resourceId: number }> {
+  const { data } = await client.post<{ officeId: number; clientId: number; resourceId: number }>(
+    `/clients/${clientId}`,
+    payload,
+    { params: { command: "reject" } },
+  );
   return data;
 }
 
+// ─── Withdraw Client (PENDING → WITHDRAWN) ───────────────────
+/**
+ * POST /clients/{clientId}?command=withdraw
+ * Body: { withdrawalDate, withdrawalReasonId, dateFormat, locale }
+ */
+export async function withdrawClient(
+  clientId: number | string,
+  payload: ClientWithdrawRequest,
+): Promise<{ officeId: number; clientId: number; resourceId: number }> {
+  const { data } = await client.post<{ officeId: number; clientId: number; resourceId: number }>(
+    `/clients/${clientId}`,
+    payload,
+    { params: { command: "withdraw" } },
+  );
+  return data;
+}
+
+// ─── Close Client (ACTIVE → CLOSED) ──────────────────────────
+/**
+ * POST /clients/{clientId}?command=close
+ * Body: { closureDate, closureReasonId, dateFormat, locale }
+ */
 export async function closeClient(
   clientId: number | string,
-  payload?: { closureDate?: string; dateFormat?: string; locale?: string },
-): Promise<{ clientId: number; resourceId: number }> {
-  const { data } = await client.post<{ clientId: number; resourceId: number }>(`/clients/${clientId}`, payload ?? {}, {
-    params: { command: "close" },
-  });
+  payload: ClientCloseRequest,
+): Promise<{ officeId: number; clientId: number; resourceId: number }> {
+  const { data } = await client.post<{ officeId: number; clientId: number; resourceId: number }>(
+    `/clients/${clientId}`,
+    payload,
+    { params: { command: "close" } },
+  );
   return data;
 }
 
-export async function reactivateClient(clientId: number | string): Promise<{ clientId: number; resourceId: number }> {
-  const { data } = await client.post<{ clientId: number; resourceId: number }>(`/clients/${clientId}`, null, {
-    params: { command: "reactivate" },
-  });
+// ─── Reactivate Client (CLOSED → PENDING) ────────────────────
+/**
+ * POST /clients/{clientId}?command=reactivate
+ * Body: { reactivationDate, dateFormat, locale }
+ */
+export async function reactivateClient(
+  clientId: number | string,
+  payload: ClientReactivateRequest,
+): Promise<{ officeId: number; clientId: number; resourceId: number }> {
+  const { data } = await client.post<{ officeId: number; clientId: number; resourceId: number }>(
+    `/clients/${clientId}`,
+    payload,
+    { params: { command: "reactivate" } },
+  );
   return data;
 }
 
-export async function undoRejectClient(clientId: number | string): Promise<{ clientId: number; resourceId: number }> {
-  const { data } = await client.post<{ clientId: number; resourceId: number }>(`/clients/${clientId}`, null, {
-    params: { command: "undoRejection" },
-  });
+// ─── Undo Rejection (REJECTED → PENDING) ─────────────────────
+/**
+ * POST /clients/{clientId}?command=undoRejection
+ * Body: { reopenedDate, dateFormat, locale }
+ */
+export async function undoRejectClient(
+  clientId: number | string,
+  payload: ClientUndoRejectionRequest,
+): Promise<{ officeId: number; clientId: number; resourceId: number }> {
+  const { data } = await client.post<{ officeId: number; clientId: number; resourceId: number }>(
+    `/clients/${clientId}`,
+    payload,
+    { params: { command: "undoRejection" } },
+  );
   return data;
 }
 
-export async function undoWithdrawClient(clientId: number | string): Promise<{ clientId: number; resourceId: number }> {
-  const { data } = await client.post<{ clientId: number; resourceId: number }>(`/clients/${clientId}`, null, {
-    params: { command: "undoWithdrawal" },
-  });
+// ─── Undo Withdrawal (WITHDRAWN → PENDING) ───────────────────
+/**
+ * POST /clients/{clientId}?command=undoWithdrawal
+ * Body: { reopenedDate, dateFormat, locale }
+ */
+export async function undoWithdrawClient(
+  clientId: number | string,
+  payload: ClientUndoWithdrawalRequest,
+): Promise<{ officeId: number; clientId: number; resourceId: number }> {
+  const { data } = await client.post<{ officeId: number; clientId: number; resourceId: number }>(
+    `/clients/${clientId}`,
+    payload,
+    { params: { command: "undoWithdrawal" } },
+  );
   return data;
 }
 
@@ -190,7 +252,7 @@ export async function undoWithdrawClient(clientId: number | string): Promise<{ c
 
 /**
  * POST /clients/{clientId}?command=assignStaff
- * Assigns a loan officer (staff) to this client.
+ * Body: { staffId }
  */
 export async function assignStaff(
   clientId: number | string,
@@ -204,7 +266,7 @@ export async function assignStaff(
 
 /**
  * POST /clients/{clientId}?command=unassignStaff
- * Removes the currently assigned staff from this client.
+ * Body: { staffId }
  */
 export async function unassignStaff(
   clientId: number | string,
@@ -218,7 +280,7 @@ export async function unassignStaff(
 
 /**
  * POST /clients/{clientId}?command=updateSavingsAccount
- * Changes the client’s default savings account.
+ * Body: { savingsAccountId }
  */
 export async function updateSavingsAccount(
   clientId: number | string,
@@ -234,7 +296,7 @@ export async function updateSavingsAccount(
 
 /**
  * POST /clients/{clientId}?command=proposeTransfer
- * Initiates a transfer of this client to another office.
+ * Body: { destinationOfficeId, transferDate?, dateFormat, locale, note? }
  */
 export async function proposeClientTransfer(
   clientId: number | string,
@@ -248,7 +310,7 @@ export async function proposeClientTransfer(
 
 /**
  * POST /clients/{clientId}?command=acceptTransfer
- * Accepts a pending transfer (origin office approves).
+ * Body: { transferDate?, dateFormat, locale, note? }
  */
 export async function acceptClientTransfer(
   clientId: number | string,
@@ -262,7 +324,7 @@ export async function acceptClientTransfer(
 
 /**
  * POST /clients/{clientId}?command=rejectTransfer
- * Rejects a pending transfer.
+ * Body: { transferDate?, dateFormat, locale, note? }
  */
 export async function rejectClientTransfer(
   clientId: number | string,
@@ -276,7 +338,7 @@ export async function rejectClientTransfer(
 
 /**
  * POST /clients/{clientId}?command=withdrawTransfer
- * Withdraws a pending transfer (requesting office cancels).
+ * Body: { transferDate?, dateFormat, locale, note? }
  */
 export async function withdrawClientTransfer(
   clientId: number | string,
@@ -290,7 +352,7 @@ export async function withdrawClientTransfer(
 
 /**
  * POST /clients/{clientId}?command=proposeAndAcceptTransfer
- * Combines propose + accept into a single request.
+ * Body: { destinationOfficeId, transferDate?, dateFormat, locale, note? }
  */
 export async function proposeAndAcceptClientTransfer(
   clientId: number | string,

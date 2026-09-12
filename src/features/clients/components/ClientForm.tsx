@@ -1,4 +1,4 @@
-import { useWatch, useForm } from "react-hook-form";
+import { useWatch, useForm, Controller } from "react-hook-form";
 import type { FC } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -51,13 +51,13 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
       lastname: client?.lastname ?? "",
       fullname: client?.fullname ?? "",
       officeId: client?.officeId ?? undefined,
-      staffId: client?.staffId ?? null,
-      groupId: null,
+      staffId: client?.staffId ?? undefined,
+      groupId: undefined,
       dateOfBirth: normalizeDateForForm(client?.dateOfBirth),
-      genderId: client?.gender?.id ?? null,
-      legalFormId: client?.legalForm?.id ?? (mode === "create" ? 1 : null),
-      clientTypeId: client?.clientType?.id ?? null,
-      clientClassificationId: client?.clientClassification?.id ?? null,
+      genderId: client?.gender?.id ?? undefined,
+      legalFormId: client?.legalForm?.id ?? (mode === "create" ? 1 : undefined),
+      clientTypeId: client?.clientType?.id ?? undefined,
+      clientClassificationId: client?.clientClassification?.id ?? undefined,
       externalId: client?.externalId ?? "",
       mobileNo: client?.mobileNo ?? "",
       emailAddress: client?.emailAddress ?? "",
@@ -67,7 +67,7 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
       locale: "en",
       active: mode === "create" ? true : (client?.active ?? false),
       isStaff: client?.isStaff ?? false,
-      savingsProductId: null,
+      savingsProductId: undefined,
       accountNo: client?.accountNo ?? "",
       clientNonPersonDetails: undefined,
     },
@@ -131,7 +131,7 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
       {/* Section 1: Legal Form */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("Legal Form")}</CardTitle>
+           <CardTitle className="text-base">{t("Legal Form")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
@@ -167,42 +167,54 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
             <label className="block text-sm font-medium" htmlFor="officeId">
               {t("Office")} *
             </label>
-            <Select
-              disabled={isSubmitting || mode === "edit"}
-              value={client?.officeId ? String(client.officeId) : undefined}
-              onValueChange={(v) => setValue("officeId", Number(v), { shouldValidate: true })}
-            >
-              <SelectTrigger className={errors.officeId ? "border-red-300" : ""}>
-                <SelectValue placeholder={t("Select office")} />
-              </SelectTrigger>
-              <SelectContent>
-                {template?.officeOptions?.map((o) => (
-                  <SelectItem key={o.id} value={String(o.id)}>
-                    {o.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="officeId"
+              render={({ field }) => (
+                <Select
+                  disabled={isSubmitting || mode === "edit"}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={(v) => field.onChange(Number(v))}
+                >
+                  <SelectTrigger className={errors.officeId ? "border-red-300" : ""}>
+                    <SelectValue placeholder={t("Select office")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {template?.officeOptions?.map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.officeId && <p className="text-xs text-red-500">{errors.officeId.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="block text-sm font-medium">{t("Staff (Loan Officer)")}</label>
-            <Select
-              disabled={isSubmitting}
-              value={client?.staffId ? String(client.staffId) : undefined}
-              onValueChange={(v) => setValue("staffId", Number(v))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("Select staff")} />
-              </SelectTrigger>
-              <SelectContent>
-                {template?.staffOptions?.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>
-                    {s.displayName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="staffId"
+              render={({ field }) => (
+                <Select
+                  disabled={isSubmitting}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={(v) => field.onChange(Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("Select staff")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {template?.staffOptions?.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.displayName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium">{t("Account No")}</label>
@@ -220,41 +232,55 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="block text-sm font-medium">{t("Client Type")}</label>
-            <Select
-              disabled={isSubmitting}
-              onValueChange={(v) => setValue("clientTypeId", v === "" ? null : Number(v))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("Select type")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">{t("None")}</SelectItem>
-                {template?.clientTypeOptions?.map((t) => (
-                  <SelectItem key={t.id} value={String(t.id)}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="clientTypeId"
+              render={({ field }) => (
+                <Select
+                  disabled={isSubmitting}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("Select type")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{t("None")}</SelectItem>
+                    {template?.clientTypeOptions?.map((ct) => (
+                      <SelectItem key={ct.id} value={String(ct.id)}>
+                        {ct.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="block text-sm font-medium">{t("Client Classification")}</label>
-            <Select
-              disabled={isSubmitting}
-              onValueChange={(v) => setValue("clientClassificationId", v === "" ? null : Number(v))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("Select classification")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">{t("None")}</SelectItem>
-                {template?.clientClassificationOptions?.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="clientClassificationId"
+              render={({ field }) => (
+                <Select
+                  disabled={isSubmitting}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("Select classification")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{t("None")}</SelectItem>
+                    {template?.clientClassificationOptions?.map((cc) => (
+                      <SelectItem key={cc.id} value={String(cc.id)}>
+                        {cc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
         </CardContent>
       </Card>
@@ -334,29 +360,41 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <label className="block text-sm font-medium">{t("Gender")}</label>
-            <Select
-              disabled={isSubmitting}
-              value={client?.gender?.id ? String(client.gender.id) : undefined}
-              onValueChange={(v) => setValue("genderId", Number(v))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("Select gender")} />
-              </SelectTrigger>
-              <SelectContent>
-                {template?.genderOptions?.map((g) => (
-                  <SelectItem key={g.id} value={String(g.id)}>
-                    {g.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="genderId"
+              render={({ field }) => (
+                <Select
+                  disabled={isSubmitting}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={(v) => field.onChange(Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("Select gender")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {template?.genderOptions?.map((g) => (
+                      <SelectItem key={g.id} value={String(g.id)}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <div className="flex items-center gap-3 pt-2">
-            <Switch
-              id="isStaff"
-              disabled={isSubmitting}
-              onCheckedChange={(v) => setValue("isStaff", v)}
-              defaultChecked={client?.isStaff ?? false}
+            <Controller
+              control={control}
+              name="isStaff"
+              render={({ field }) => (
+                <Switch
+                  id="isStaff"
+                  disabled={isSubmitting}
+                  checked={field.value ?? false}
+                  onCheckedChange={field.onChange}
+                />
+              )}
             />
             <label className="block text-sm font-medium" htmlFor="isStaff">
               {t("Is Staff?")}
@@ -372,11 +410,17 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
-            <Switch
-              id="active"
-              disabled={isSubmitting || mode === "edit"}
-              onCheckedChange={(v) => setValue("active", v)}
-              defaultChecked={mode === "create" ? true : (client?.active ?? false)}
+            <Controller
+              control={control}
+              name="active"
+              render={({ field }) => (
+                <Switch
+                  id="active"
+                  disabled={isSubmitting || mode === "edit"}
+                  checked={field.value ?? false}
+                  onCheckedChange={field.onChange}
+                />
+              )}
             />
             <Label htmlFor="active">{t("Active (required)")}</Label>
           </div>
@@ -411,7 +455,7 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
               <label className="block text-sm font-medium">{t("Constitution")}</label>
               <Select
                 disabled={isSubmitting}
-                onValueChange={(v) => setValue("clientNonPersonDetails.constitutionId", v === "" ? null : Number(v))}
+                onValueChange={(v) => setValue("clientNonPersonDetails.constitutionId", v === "" ? undefined : Number(v))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t("Select constitution")} />
@@ -434,9 +478,7 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
               <label className="block text-sm font-medium">{t("Main Business Line")}</label>
               <Select
                 disabled={isSubmitting}
-                onValueChange={(v) =>
-                  setValue("clientNonPersonDetails.mainBusinessLineId", v === "" ? null : Number(v))
-                }
+                onValueChange={(v) => setValue("clientNonPersonDetails.mainBusinessLineId", v === "" ? undefined : Number(v))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t("Select business line")} />
@@ -476,22 +518,29 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
           <CardContent>
             <div className="flex flex-col gap-1.5 max-w-xs">
               <label className="block text-sm font-medium">{t("Savings Product")}</label>
-              <Select
-                disabled={isSubmitting}
-                onValueChange={(v) => setValue("savingsProductId", v === "" ? null : Number(v))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("None (skip)")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">{t("None (skip)")}</SelectItem>
-                  {template.savingsProductOptions.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="savingsProductId"
+                render={({ field }) => (
+                  <Select
+                    disabled={isSubmitting}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("None (skip)")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">{t("None (skip)")}</SelectItem>
+                      {template?.savingsProductOptions?.map((p) => (
+                        <SelectItem key={p.id} value={String(p.id)}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </CardContent>
         </Card>

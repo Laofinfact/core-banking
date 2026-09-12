@@ -18,15 +18,15 @@ export type Gender = "male" | "female";
 
 /** Timeline object returned by */
 export interface ClientTimeline {
-  submittedOnDate?: string;
+  submittedOnDate?: string | number[];
   submittedByUsername?: string;
   submittedByFirstname?: string;
   submittedByLastname?: string;
-  activatedOnDate?: string;
+  activatedOnDate?: string | number[];
   activatedByUsername?: string;
   activatedByFirstname?: string;
   activatedByLastname?: string;
-  closedOnDate?: string;
+  closedOnDate?: string | number[];
   closedByUsername?: string;
   closedByFirstname?: string;
   closedByLastname?: string;
@@ -40,7 +40,7 @@ export interface Client {
   status: { id: number; code: string; value: string };
   subStatus?: { id: number; code: string; value: string };
   active?: boolean;
-  activationDate?: string;
+  activationDate?: string | number[];
   firstname?: string;
   middlename?: string;
   lastname?: string;
@@ -49,7 +49,7 @@ export interface Client {
   mobileNo?: string;
   emailAddress?: string;
   gender?: { id: number; name: string; active: boolean };
-  dateOfBirth?: string;
+  dateOfBirth?: string | number[];
   legalForm?: { id: number; code: string; value: string };
   officeId: number;
   officeName?: string;
@@ -66,6 +66,19 @@ export interface Client {
   timeline?: ClientTimeline;
   lastModifiedDate?: string;
   rowIndex?: number;
+  officeJoiningDate?: string | number[];
+  closureDate?: string | number[];
+  closureReason?: { id: number; code: string; value: string };
+  rejectionDate?: string | number[];
+  rejectionReason?: { id: number; code: string; value: string };
+  withdrawalDate?: string | number[];
+  withdrawalReason?: { id: number; code: string; value: string };
+  reactivateDate?: string | number[];
+  reopenedDate?: string | number[];
+  proposedTransferDate?: string | number[];
+  transferToOfficeId?: number;
+  transferToOfficeName?: string;
+  clientNonPersonDetails?: ClientNonPerson;
   address?: Array<{
     addressId: number;
     street?: string;
@@ -79,7 +92,7 @@ export interface Client {
     countryId?: number;
     postalCode?: string;
     latitude?: number;
-    longitude?: string;
+    longitude?: number;
     createdBy?: string;
     createdOn?: string;
     updatedBy?: string;
@@ -102,10 +115,14 @@ export interface ClientListParams {
   orderBy?: string;
   sortOrder?: "ASC" | "DESC";
   displayName?: string;
+  firstName?: string;
+  lastName?: string;
   officeId?: number;
   staffId?: number;
   status?: number;
   underHierarchy?: string;
+  orphansOnly?: boolean;
+  legalForm?: number;
 }
 
 /** Request body for creating/updating a client — matches POST /api/v1/clients */
@@ -166,16 +183,27 @@ export interface ClientTemplate {
   datatables?: unknown[];
   activationDate?: string;
   dateFormat?: string;
+  /** Closure reasons (populated when commandParam=close) */
+  closureReasons?: Array<{ id: number; name: string; position?: number }>;
+  /** Rejection reasons (populated when commandParam=reject) */
+  rejectionReasons?: Array<{ id: number; name: string; position?: number }>;
+  /** Withdrawal reasons (populated when commandParam=withdraw) */
+  withdrawalReasons?: Array<{ id: number; name: string; position?: number }>;
+  /** Whether address is enabled globally */
+  isAddressEnabled?: boolean;
 }
 
-/** Activation request */
+/** Activation request (POST /clients/{id}?command=activate) */
 export interface ClientActivateRequest {
-  activationDate?: string;
+  activationDate: string;
   dateFormat?: string;
   locale?: string;
+  /** Optional: open savings account on activation */
+  savingsProductId?: number;
+  savingsAccountId?: number;
 }
 
-/** Refuse (PENDING → REJECTED) request */
+/** Reject (PENDING → REJECTED) request (POST /clients/{id}?command=reject) */
 export interface ClientRejectRequest {
   rejectionDate: string;
   rejectionReasonId: number;
@@ -183,7 +211,7 @@ export interface ClientRejectRequest {
   locale?: string;
 }
 
-/** Withdraw (PENDING → WITHDRAWN) — Applicant retraction request */
+/** Withdraw (PENDING → WITHDRAWN) request (POST /clients/{id}?command=withdraw) */
 export interface ClientWithdrawRequest {
   withdrawalDate: string;
   withdrawalReasonId: number;
@@ -191,7 +219,7 @@ export interface ClientWithdrawRequest {
   locale?: string;
 }
 
-/** Close (ACTIVE → CLOSED) request */
+/** Close (ACTIVE → CLOSED) request (POST /clients/{id}?command=close) */
 export interface ClientCloseRequest {
   closureDate: string;
   closureReasonId: number;
@@ -199,15 +227,22 @@ export interface ClientCloseRequest {
   locale?: string;
 }
 
-/** Reactivate (CLOSED → ACTIVE) request */
+/** Reactivate (CLOSED → PENDING) request (POST /clients/{id}?command=reactivate) */
 export interface ClientReactivateRequest {
   reactivationDate: string;
   dateFormat?: string;
   locale?: string;
 }
 
-/** Undo reject (REJECTED → PENDING) and Undo withdraw (WITHDRAWN → PENDING) */
-export interface ClientReopenedRequest {
+/** Undo reject (REJECTED → PENDING) request (POST /clients/{id}?command=undoRejection) */
+export interface ClientUndoRejectionRequest {
+  reopenedDate: string;
+  dateFormat?: string;
+  locale?: string;
+}
+
+/** Undo withdraw (WITHDRAWN → PENDING) request (POST /clients/{id}?command=undoWithdrawal) */
+export interface ClientUndoWithdrawalRequest {
   reopenedDate: string;
   dateFormat?: string;
   locale?: string;

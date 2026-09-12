@@ -19,7 +19,7 @@ const CreateClientPage: FC = () => {
 
   const handleSubmit = useCallback(
     async (values: CreateClientFormValues) => {
-      const result = await createMutation.mutateAsync(values as any);
+      const result = await createMutation.mutateAsync(values);
       navigate(`/clients/${result.clientId}`);
     },
     [createMutation, navigate],

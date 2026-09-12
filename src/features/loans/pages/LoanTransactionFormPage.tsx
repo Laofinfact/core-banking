@@ -117,6 +117,30 @@ const LoanTransactionFormPage: FC = () => {
       if (values.bankNumber) txPayload.bankNumber = values.bankNumber;
       if (values.checkNumber) txPayload.checkNumber = values.checkNumber;
       if (values.routingCode) txPayload.routingCode = values.routingCode;
+      if (values.externalId) txPayload.externalId = values.externalId;
+
+      // Write-off reason
+      if (transactionType === "writeoff" && values.writeoffReasonId) {
+        txPayload.writeoffReasonId = values.writeoffReasonId;
+      }
+      // Charge-off reason
+      if (transactionType === "charge-off" && values.chargeOffReasonId) {
+        txPayload.chargeOffReasonId = values.chargeOffReasonId;
+      }
+      // Re-Age / Re-Amortize special fields
+      if (transactionType === "reAge" || transactionType === "reAmortize") {
+        if (values.frequencyType != null) txPayload.frequencyType = values.frequencyType;
+        if (values.frequencyNumber != null) txPayload.frequencyNumber = values.frequencyNumber;
+        if (values.startDate) txPayload.startDate = values.startDate;
+        if (values.numberOfInstallments != null) txPayload.numberOfInstallments = values.numberOfInstallments;
+        if (values.reasonCodeValueId) txPayload.reasonCodeValueId = values.reasonCodeValueId;
+        if (transactionType === "reAge" && values.reAgeInterestHandling) {
+          txPayload.reAgeInterestHandling = values.reAgeInterestHandling;
+        }
+        if (transactionType === "reAmortize" && values.reAmortizationInterestHandling) {
+          txPayload.reAmortizationInterestHandling = values.reAmortizationInterestHandling;
+        }
+      }
 
       return makeTransaction(id, txPayload, transactionType!);
     },

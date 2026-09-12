@@ -25,8 +25,18 @@ export type TransactionFormValues = {
   checkNumber?: string;
   routingCode?: string;
   note?: string;
+  externalId?: string;
   approvedOnDate?: string;
   actualDisbursementDate?: string;
+  writeoffReasonId?: number;
+  chargeOffReasonId?: number;
+  frequencyType?: number;
+  frequencyNumber?: number;
+  startDate?: string;
+  numberOfInstallments?: number;
+  reAgeInterestHandling?: string;
+  reAmortizationInterestHandling?: string;
+  reasonCodeValueId?: number;
 };
 
 interface LoanTransactionFormProps {
@@ -210,6 +220,68 @@ const LoanTransactionForm: FC<LoanTransactionFormProps> = ({
           <Textarea {...register("note")} disabled={isSubmitting} placeholder={t("Optional note...")} rows={3} />
         </CardContent>
       </Card>
+      {transactionType !== "approve" && transactionType !== "undoDisbursal" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("Additional Information")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium">{t("External ID")}</label>
+              <Input {...register("externalId")} disabled={isSubmitting} placeholder={t("External reference")} />
+            </div>
+            {transactionType === "writeoff" && (
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium">{t("Write-off Reason")}</label>
+                <Input type="number" {...register("writeoffReasonId", { valueAsNumber: true })} disabled={isSubmitting} placeholder={t("Reason code value ID")} />
+              </div>
+            )}
+            {transactionType === "charge-off" && (
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium">{t("Charge-off Reason")}</label>
+                <Input type="number" {...register("chargeOffReasonId", { valueAsNumber: true })} disabled={isSubmitting} placeholder={t("Reason code value ID")} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+      {(transactionType === "reAge" || transactionType === "reAmortize") && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("Reschedule Parameters")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium">{t("Frequency Type")}</label>
+              <Select value={watch("frequencyType") ? String(watch("frequencyType")) : ""} onValueChange={(v) => setValue("frequencyType", Number(v))} disabled={isSubmitting}>
+                <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">{t("Days")}</SelectItem>
+                  <SelectItem value="1">{t("Weeks")}</SelectItem>
+                  <SelectItem value="2">{t("Months")}</SelectItem>
+                  <SelectItem value="3">{t("Years")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium">{t("Frequency Number")}</label>
+              <Input type="number" {...register("frequencyNumber", { valueAsNumber: true })} disabled={isSubmitting} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium">{t("Start Date")}</label>
+              <Input type="date" {...register("startDate")} disabled={isSubmitting} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium">{t("Number of Installments")}</label>
+              <Input type="number" {...register("numberOfInstallments", { valueAsNumber: true })} disabled={isSubmitting} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium">{t("Reason")}</label>
+              <Input type="number" {...register("reasonCodeValueId", { valueAsNumber: true })} disabled={isSubmitting} placeholder={t("Reason code value ID")} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex items-center gap-3">
         <Button
           type="submit"

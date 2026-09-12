@@ -1,7 +1,6 @@
 import { type FC, useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
   Pencil,
   CheckCircle2,
   Trash2,
@@ -69,7 +68,11 @@ const ClientDetailPage: FC = () => {
 
   const handleActivate = useCallback(async () => {
     if (!client) return;
-    await activateMutation.mutateAsync({ clientId: client.id });
+    const today = new Date().toISOString().split("T")[0];
+    await activateMutation.mutateAsync({
+      clientId: client.id,
+      payload: { activationDate: today, dateFormat: "yyyy-MM-dd", locale: "en" },
+    });
     setShowActivateConfirm(false);
     refetch();
   }, [client, activateMutation, refetch]);
