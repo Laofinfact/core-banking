@@ -60,6 +60,14 @@ const LoanFormPage: FC = () => {
   const accountLinkingOptions = template?.accountLinkingOptions ?? [];
   const strategyOptions =
     template?.transactionProcessingStrategyOptions ?? productTemplate?.transactionProcessingStrategyOptions ?? [];
+  const amortizationTypeOptions = template?.amortizationTypeOptions ?? [];
+  const interestTypeOptions = template?.interestTypeOptions ?? [];
+  const interestCalculationPeriodTypeOptions = template?.interestCalculationPeriodTypeOptions ?? [];
+  const repaymentFrequencyTypeOptions = template?.repaymentFrequencyTypeOptions ?? [];
+  const interestRateFrequencyTypeOptions = template?.interestRateFrequencyTypeOptions ?? [];
+  const daysInYearTypeOptions = template?.daysInYearTypeOptions ?? [];
+  const daysInMonthTypeOptions = template?.daysInMonthTypeOptions ?? [];
+  const chargeOptions = template?.chargeOptions ?? [];
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const previewMutation = useMutation({
@@ -106,11 +114,10 @@ const LoanFormPage: FC = () => {
 
   const handleSubmit = useCallback(
     async (values: CreateLoanFormValues & { originators?: Array<{ id: number; name?: string | null }> }) => {
-      // Strip null values since LoanCreateRequest doesn't accept null
-      const cleaned = Object.fromEntries(Object.entries(values).filter(([, v]) => v !== null)) as Record<
-        string,
-        unknown
-      >;
+      // Strip null and empty-string values since LoanCreateRequest doesn't accept them
+      const cleaned = Object.fromEntries(
+        Object.entries(values).filter(([, v]) => v !== null && v !== "" && v !== undefined),
+      ) as Record<string, unknown>;
 
       const payload: Record<string, unknown> = {
         ...cleaned,
@@ -233,6 +240,14 @@ const LoanFormPage: FC = () => {
         loanOfficerOptions={loanOfficerOptions}
         loanPurposeOptions={loanPurposeOptions}
         accountLinkingOptions={accountLinkingOptions}
+        amortizationTypeOptions={amortizationTypeOptions}
+        interestTypeOptions={interestTypeOptions}
+        interestCalculationPeriodTypeOptions={interestCalculationPeriodTypeOptions}
+        repaymentFrequencyTypeOptions={repaymentFrequencyTypeOptions}
+        interestRateFrequencyTypeOptions={interestRateFrequencyTypeOptions}
+        daysInYearTypeOptions={daysInYearTypeOptions}
+        daysInMonthTypeOptions={daysInMonthTypeOptions}
+        chargeOptions={chargeOptions}
         onPreviewSchedule={(values) => previewMutation.mutate(values)}
         previewLoading={previewMutation.isPending}
       />

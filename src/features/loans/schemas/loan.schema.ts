@@ -22,7 +22,7 @@ export const createLoanSchema = z
     loanOfficerId: z.number().int().optional().nullable(),
     fundId: z.number().int().optional().nullable(),
     linkAccountId: z.number().int().optional().nullable(),
-    externalId: z.string().max(100).optional(),
+    externalId: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.string().max(100).optional()),
     graceOnPrincipalPayment: z.preprocess(
       (v) => (v === "" || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
       z.number().int().min(0).optional(),
@@ -43,7 +43,6 @@ export const createLoanSchema = z
       (v) => (v === "" || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
       z.number().min(0).optional(),
     ),
-    allowPartialPeriodInterestCalculation: z.boolean().optional(),
     maxOutstandingLoanBalance: z.preprocess(
       (v) => (v === "" || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
       z.number().optional(),
@@ -51,17 +50,41 @@ export const createLoanSchema = z
     dateFormat: z.string().default("yyyy-MM-dd"),
     locale: z.string().default("en"),
     charges: z.array(z.object({ chargeId: z.number(), amount: z.number() })).optional(),
+    isTopup: z.boolean().optional(),
+    loanIdToClose: z.number().int().positive().optional(),
+    createStandingInstructionAtDisbursement: z.boolean().optional(),
+    interestChargedFromDate: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.string().optional()),
+    syncExpectedWithDisbursementDate: z.boolean().optional(),
+    disallowExpectedDisbursements: z.boolean().optional(),
+    fixedLength: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
+      z.number().int().positive().optional(),
+    ),
+    daysInYearType: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+      z.number().int().optional(),
+    ),
+    daysInMonthType: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+      z.number().int().optional(),
+    ),
+    repaymentStartDateType: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+      z.number().int().optional(),
+    ),
+    allowPartialPeriodInterestCalculation: z.boolean().optional(),
+    recurringMoratoriumOnPrincipalPeriods: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
+      z.number().int().min(0).optional(),
+    ),
     disbursementData: z
       .array(
         z.object({
           expectedDisbursementDate: z.string(),
           principal: z.number().positive(),
-        })
+        }),
       )
       .optional(),
-    isTopup: z.boolean().optional(),
-    loanIdToClose: z.number().int().positive().optional(),
-    createStandingInstructionAtDisbursement: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     // Cross-field rules (doc §8/§11): term & repayment frequency types must match
@@ -123,6 +146,33 @@ export const createLoanSchema = z
         path: ["loanIdToClose"],
         message: "Loan to close is required for topup loans",
       });
+    }
+    // Grace on arrears ageing must be < numberOfRepayments
+    if (data.graceOnArrearsAgeing != null && data.graceOnArrearsAgeing >= data.numberOfRepayments) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["graceOnArrearsAgeing"],
+        message: "Grace on arrears ageing must be less than number of repayments",
+      });
+    }
+    // maxOutstandingLoanBalance must be >= principal when set
+    if (data.maxOutstandingLoanBalance != null && data.maxOutstandingLoanBalance > 0 && data.maxOutstandingLoanBalance < data.principal) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["maxOutstandingLoanBalance"],
+        message: "Max outstanding loan balance must be greater than or equal to principal",
+      });
+    }
+    // recurringMoratorium validation: (numberOfRepayments - graceOnPrincipal) % (moratorium + 1) must equal 1
+    if (data.recurringMoratoriumOnPrincipalPeriods != null && data.recurringMoratoriumOnPrincipalPeriods > 0 && data.graceOnPrincipalPayment != null) {
+      const expected = (data.numberOfRepayments - data.graceOnPrincipalPayment) % (data.recurringMoratoriumOnPrincipalPeriods + 1);
+      if (expected !== 1) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["recurringMoratoriumOnPrincipalPeriods"],
+          message: "Recurring moratorium: (numberOfRepayments - graceOnPrincipal) % (moratorium + 1) must equal 1",
+        });
+      }
     }
   });
 

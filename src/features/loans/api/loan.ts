@@ -11,6 +11,7 @@ import type {
   LoanListParams,
   LoanCreateRequest,
   LoanTemplate,
+  LoanTemplateOption,
   LoanCommandRequest,
   LoanCommandResponse,
   RepaymentTemplate,
@@ -174,7 +175,65 @@ export async function fetchLoanTemplate(clientId?: number, productId?: number): 
   if (clientId) params.clientId = String(clientId);
   if (productId) params.productId = String(productId);
   const { data } = await client.get<LoanTemplate>("/loans/template", { params });
-  return data;
+  const d = data as Record<string, unknown>;
+  const list = (v: unknown) => (Array.isArray(v) ? v : []);
+  const enumOpt = (v: unknown): LoanTemplateOption[] =>
+    list(v).map((o: Record<string, unknown>) => ({
+      id: Number(o.id ?? 0),
+      code: String(o.code ?? ""),
+      value: String(o.value ?? o.description ?? ""),
+      name: String(o.value ?? o.description ?? ""),
+    }));
+  const strEnumOpt = (v: unknown): Array<{ id: string; code: string; value: string }> =>
+    list(v).map((o: Record<string, unknown>) => ({
+      id: String(o.id ?? ""),
+      code: String(o.id ?? o.code ?? ""),
+      value: String(o.value ?? o.description ?? o.code ?? ""),
+    }));
+  const strEnumOptByCode = (v: unknown): Array<{ id: string; code: string; value: string }> =>
+    list(v).map((o: Record<string, unknown>) => ({
+      id: String(o.id ?? ""),
+      code: String(o.code ?? o.value ?? ""),
+      value: String(o.value ?? o.description ?? o.code ?? ""),
+    }));
+  return {
+    ...data,
+    productOptions: (d?.productOptions as LoanTemplate["productOptions"]) ?? [],
+    loanProductOptions: (d?.loanProductOptions as LoanTemplate["loanProductOptions"]) ?? [],
+    fundOptions: (d?.fundOptions as LoanTemplate["fundOptions"]) ?? [],
+    loanOfficerOptions: (d?.loanOfficerOptions as LoanTemplate["loanOfficerOptions"]) ?? [],
+    loanPurposeOptions: (d?.loanPurposeOptions as LoanTemplate["loanPurposeOptions"]) ?? [],
+    loanCollateralOptions: (d?.loanCollateralOptions as LoanTemplate["loanCollateralOptions"]) ?? [],
+    accountLinkingOptions: (d?.accountLinkingOptions as LoanTemplate["accountLinkingOptions"]) ?? [],
+    clientActiveLoanOptions: (d?.clientActiveLoanOptions as LoanTemplate["clientActiveLoanOptions"]) ?? [],
+    chargeOptions: (d?.chargeOptions as LoanTemplate["chargeOptions"]) ?? [],
+    amortizationTypeOptions: enumOpt(d?.amortizationTypeOptions),
+    interestTypeOptions: enumOpt(d?.interestTypeOptions),
+    interestCalculationPeriodTypeOptions: enumOpt(d?.interestCalculationPeriodTypeOptions),
+    termFrequencyTypeOptions: enumOpt(d?.termFrequencyTypeOptions),
+    repaymentFrequencyTypeOptions: enumOpt(d?.repaymentFrequencyTypeOptions),
+    interestRateFrequencyTypeOptions: enumOpt(d?.interestRateFrequencyTypeOptions),
+    transactionProcessingStrategyOptions:
+      (d?.transactionProcessingStrategyOptions as LoanTemplate["transactionProcessingStrategyOptions"]) ?? [],
+    loanScheduleTypeOptions: enumOpt(d?.loanScheduleTypeOptions),
+    loanScheduleProcessingTypeOptions: enumOpt(d?.loanScheduleProcessingTypeOptions),
+    repaymentStartDateTypeOptions: enumOpt(d?.repaymentStartDateTypeOptions),
+    repaymentFrequencyNthDayTypeOptions: enumOpt(d?.repaymentFrequencyNthDayTypeOptions),
+    repaymentFrequencyDaysOfWeekTypeOptions: enumOpt(d?.repaymentFrequencyDaysOfWeekTypeOptions),
+    daysInYearTypeOptions: enumOpt(d?.daysInYearTypeOptions),
+    daysInMonthTypeOptions: enumOpt(d?.daysInMonthTypeOptions),
+    daysInYearCustomStrategyOptions: strEnumOpt(d?.daysInYearCustomStrategyOptions),
+    capitalizedIncomeCalculationTypeOptions: strEnumOpt(d?.capitalizedIncomeCalculationTypeOptions),
+    capitalizedIncomeStrategyOptions: strEnumOpt(d?.capitalizedIncomeStrategyOptions),
+    capitalizedIncomeTypeOptions: strEnumOpt(d?.capitalizedIncomeTypeOptions),
+    buyDownFeeCalculationTypeOptions: strEnumOptByCode(d?.buyDownFeeCalculationTypeOptions),
+    buyDownFeeStrategyOptions: strEnumOptByCode(d?.buyDownFeeStrategyOptions),
+    buyDownFeeIncomeTypeOptions: strEnumOptByCode(d?.buyDownFeeIncomeTypeOptions),
+    chargeOffBehaviourOptions: strEnumOpt(d?.chargeOffBehaviourOptions),
+    chargeOffReasonOptions: (d?.chargeOffReasonOptions as LoanTemplate["chargeOffReasonOptions"]) ?? [],
+    writeOffReasonOptions: (d?.writeOffReasonOptions as LoanTemplate["writeOffReasonOptions"]) ?? [],
+    floatingRateOptions: (d?.floatingRateOptions as LoanTemplate["floatingRateOptions"]) ?? [],
+  };
 }
 
 export async function createLoan(payload: LoanCreateRequest): Promise<LoanCommandResponse> {

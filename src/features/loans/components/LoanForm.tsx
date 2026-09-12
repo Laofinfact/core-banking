@@ -30,11 +30,19 @@ interface LoanFormProps {
   clientId?: number;
   onClientChange?: (clientId: number) => void;
   onProductIdChange?: (productId: number) => void;
-  strategyOptions?: Array<{ code: string; name: string }>;
+  strategyOptions?: Array<{ id: number; code: string; name: string }>;
   fundOptions?: Array<{ id: number; name: string }>;
   loanOfficerOptions?: Array<{ id: number; displayName?: string; name?: string }>;
   loanPurposeOptions?: Array<{ id: number; name: string }>;
   accountLinkingOptions?: Array<{ id: number; accountNo?: string; productName?: string }>;
+  amortizationTypeOptions?: Array<{ id: number; code?: string; value?: string; name?: string }>;
+  interestTypeOptions?: Array<{ id: number; code?: string; value?: string; name?: string }>;
+  interestCalculationPeriodTypeOptions?: Array<{ id: number; code?: string; value?: string; name?: string }>;
+  repaymentFrequencyTypeOptions?: Array<{ id: number; code?: string; value?: string; name?: string }>;
+  interestRateFrequencyTypeOptions?: Array<{ id: number; code?: string; value?: string; name?: string }>;
+  daysInYearTypeOptions?: Array<{ id: number; code?: string; value?: string; name?: string }>;
+  daysInMonthTypeOptions?: Array<{ id: number; code?: string; value?: string; name?: string }>;
+  chargeOptions?: Array<{ id: number; name: string; active?: boolean; penalty?: boolean; amount?: number }>;
   /** Preview the repayment schedule before submitting (POST /loans?command=calculateLoanSchedule) */
   onPreviewSchedule?: (values: FormFields) => void;
   previewLoading?: boolean;
@@ -46,13 +54,44 @@ export type FormFields = CreateLoanFormValues & {
   originators?: Array<{ id: number; name?: string | null }>;
 };
 
-/** Frequency options (0=Days, 1=Weeks, 2=Months, 3=Years) shared by term & repayment selects */
-const FREQUENCY_OPTIONS = [
-  { id: 0, label: "Days" },
-  { id: 1, label: "Weeks" },
-  { id: 2, label: "Months" },
-  { id: 3, label: "Years" },
-];
+const ChargeCheckbox: React.FC<{
+  charge: { id: number; name: string; amount?: number; penalty?: boolean };
+  checked: boolean;
+  onToggle: (checked: boolean) => void;
+  amount: number | undefined;
+  onAmountChange: (amount: number) => void;
+  disabled?: boolean;
+}> = ({ charge, checked, onToggle, amount, onAmountChange, disabled }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-start gap-3 rounded-lg border p-3">
+      <Checkbox
+        id={`charge-${charge.id}`}
+        checked={checked}
+        onCheckedChange={(v) => onToggle(v === true)}
+        disabled={disabled}
+        className="mt-0.5"
+      />
+      <div className="flex-1 space-y-1">
+        <label htmlFor={`charge-${charge.id}`} className="flex items-center gap-2 text-sm font-medium">
+          {charge.name}
+          {charge.penalty && <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-700">Penalty</span>}
+        </label>
+        {checked && (
+          <Input
+            type="number"
+            step="0.01"
+            value={amount ?? charge.amount ?? 0}
+            onChange={(e) => onAmountChange(Number(e.target.value))}
+            disabled={disabled}
+            placeholder={t("Amount")}
+            className="max-w-[180px]"
+          />
+        )}
+      </div>
+    </div>
+  );
+};
 
 // ─── Loan Form Component ─────────────────────────────────────────
 const LoanForm: FC<LoanFormProps> = ({
@@ -72,6 +111,14 @@ const LoanForm: FC<LoanFormProps> = ({
   loanOfficerOptions,
   loanPurposeOptions,
   accountLinkingOptions,
+  amortizationTypeOptions,
+  interestTypeOptions,
+  interestCalculationPeriodTypeOptions,
+  repaymentFrequencyTypeOptions,
+  interestRateFrequencyTypeOptions,
+  daysInYearTypeOptions,
+  daysInMonthTypeOptions,
+  chargeOptions,
   onPreviewSchedule,
   previewLoading,
 }) => {
@@ -112,6 +159,14 @@ const LoanForm: FC<LoanFormProps> = ({
       graceOnArrearsAgeing: undefined,
       inArrearsTolerance: undefined,
       maxOutstandingLoanBalance: undefined,
+      fixedLength: undefined,
+      recurringMoratoriumOnPrincipalPeriods: undefined,
+      interestChargedFromDate: undefined,
+      daysInYearType: undefined,
+      daysInMonthType: undefined,
+      allowPartialPeriodInterestCalculation: undefined,
+      syncExpectedWithDisbursementDate: undefined,
+      disallowExpectedDisbursements: undefined,
       repaymentsStartingFromDate: "",
       dateFormat: "yyyy-MM-dd",
       locale: "en",
@@ -282,12 +337,18 @@ const LoanForm: FC<LoanFormProps> = ({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                {FREQUENCY_OPTIONS.map((o) => (
-                  <SelectItem key={o.id} value={String(o.id)}>
-                    {o.label}
-                  </SelectItem>
-                ))}
+               <SelectContent>
+                {(template?.termFrequencyTypeOptions ?? []).length > 0
+                  ? (template?.termFrequencyTypeOptions ?? []).map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.value ?? o.name ?? ""}
+                      </SelectItem>
+                    ))
+                  : [0, 1, 2, 3].map((id) => (
+                      <SelectItem key={id} value={String(id)}>
+                        {["Days", "Weeks", "Months", "Years"][id]}
+                      </SelectItem>
+                    ))}
               </SelectContent>
             </Select>
             {errors.loanTermFrequencyType && (
@@ -332,11 +393,17 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {FREQUENCY_OPTIONS.map((o) => (
-                  <SelectItem key={o.id} value={String(o.id)}>
-                    {o.label}
-                  </SelectItem>
-                ))}
+                {(repaymentFrequencyTypeOptions ?? []).length > 0
+                  ? (repaymentFrequencyTypeOptions ?? []).map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.value ?? o.name ?? ""}
+                      </SelectItem>
+                    ))
+                  : [0, 1, 2, 3].map((id) => (
+                      <SelectItem key={id} value={String(id)}>
+                        {["Days", "Weeks", "Months", "Years"][id]}
+                      </SelectItem>
+                    ))}
               </SelectContent>
             </Select>
             {errors.repaymentFrequencyType && (
@@ -363,8 +430,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">{t("Declining Balance")}</SelectItem>
-                <SelectItem value="1">{t("Flat")}</SelectItem>
+                {(interestTypeOptions ?? []).length > 0
+                  ? (interestTypeOptions ?? []).map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.value ?? o.name ?? ""}
+                      </SelectItem>
+                    ))
+                  : (
+                      <>
+                        <SelectItem value="0">{t("Declining Balance")}</SelectItem>
+                        <SelectItem value="1">{t("Flat")}</SelectItem>
+                      </>
+                    )}
               </SelectContent>
             </Select>
           </div>
@@ -379,8 +456,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="2">{t("Per Month")}</SelectItem>
-                <SelectItem value="3">{t("Per Year")}</SelectItem>
+                {(interestRateFrequencyTypeOptions ?? []).length > 0
+                  ? (interestRateFrequencyTypeOptions ?? []).map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.value ?? o.name ?? ""}
+                      </SelectItem>
+                    ))
+                  : (
+                      <>
+                        <SelectItem value="2">{t("Per Month")}</SelectItem>
+                        <SelectItem value="3">{t("Per Year")}</SelectItem>
+                      </>
+                    )}
               </SelectContent>
             </Select>
           </div>
@@ -395,8 +482,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">{t("Daily")}</SelectItem>
-                <SelectItem value="1">{t("Same as Repayment")}</SelectItem>
+                {(interestCalculationPeriodTypeOptions ?? []).length > 0
+                  ? (interestCalculationPeriodTypeOptions ?? []).map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.value ?? o.name ?? ""}
+                      </SelectItem>
+                    ))
+                  : (
+                      <>
+                        <SelectItem value="0">{t("Daily")}</SelectItem>
+                        <SelectItem value="1">{t("Same as Repayment")}</SelectItem>
+                      </>
+                    )}
               </SelectContent>
             </Select>
           </div>
@@ -411,8 +508,18 @@ const LoanForm: FC<LoanFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">{t("Equal Principal")}</SelectItem>
-                <SelectItem value="1">{t("Equal Installments")}</SelectItem>
+                {(amortizationTypeOptions ?? []).length > 0
+                  ? (amortizationTypeOptions ?? []).map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.value ?? o.name ?? ""}
+                      </SelectItem>
+                    ))
+                  : (
+                      <>
+                        <SelectItem value="0">{t("Equal Principal")}</SelectItem>
+                        <SelectItem value="1">{t("Equal Installments")}</SelectItem>
+                      </>
+                    )}
               </SelectContent>
             </Select>
           </div>
@@ -488,6 +595,24 @@ const LoanForm: FC<LoanFormProps> = ({
               disabled={isSubmitting}
             />
           </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium">{t("Fixed Length")}</label>
+            <Input
+              type="number"
+              {...register("fixedLength", { valueAsNumber: true })}
+              disabled={isSubmitting}
+              placeholder={t("Fixed length in months")}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium">{t("Recurring Moratorium on Principal")}</label>
+            <Input
+              type="number"
+              {...register("recurringMoratoriumOnPrincipalPeriods", { valueAsNumber: true })}
+              disabled={isSubmitting}
+              placeholder={t("Moratorium every N periods")}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -518,6 +643,10 @@ const LoanForm: FC<LoanFormProps> = ({
           <div className="space-y-1.5 col-span-2">
             <label className="block text-sm font-medium">{t("Repayments Starting From Date")}</label>
             <Input type="date" {...register("repaymentsStartingFromDate")} disabled={isSubmitting} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium">{t("Interest Charged From Date")}</label>
+            <Input type="date" {...register("interestChargedFromDate")} disabled={isSubmitting} />
           </div>
         </CardContent>
       </Card>
@@ -564,6 +693,60 @@ const LoanForm: FC<LoanFormProps> = ({
                     </SelectItem>
                   </>
                 )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium">{t("Days in Year Type")}</label>
+            <Select
+              value={watch("daysInYearType") ? String(watch("daysInYearType")) : ""}
+              onValueChange={(v) => setValue("daysInYearType", Number(v))}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t("Select")} />
+              </SelectTrigger>
+              <SelectContent>
+                {(daysInYearTypeOptions ?? []).length > 0
+                  ? (daysInYearTypeOptions ?? []).map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.value ?? o.name ?? ""}
+                      </SelectItem>
+                    ))
+                  : (
+                      <>
+                        <SelectItem value="1">{t("Actual")}</SelectItem>
+                        <SelectItem value="360">{t("360 Days")}</SelectItem>
+                        <SelectItem value="364">{t("364 Days")}</SelectItem>
+                        <SelectItem value="365">{t("365 Days")}</SelectItem>
+                      </>
+                    )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium">{t("Days in Month Type")}</label>
+            <Select
+              value={watch("daysInMonthType") ? String(watch("daysInMonthType")) : ""}
+              onValueChange={(v) => setValue("daysInMonthType", Number(v))}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t("Select")} />
+              </SelectTrigger>
+              <SelectContent>
+                {(daysInMonthTypeOptions ?? []).length > 0
+                  ? (daysInMonthTypeOptions ?? []).map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        {o.value ?? o.name ?? ""}
+                      </SelectItem>
+                    ))
+                  : (
+                      <>
+                        <SelectItem value="1">{t("Actual")}</SelectItem>
+                        <SelectItem value="30">{t("30 Days")}</SelectItem>
+                      </>
+                    )}
               </SelectContent>
             </Select>
           </div>
@@ -682,6 +865,48 @@ const LoanForm: FC<LoanFormProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Charges */}
+      {mode === "create" && (chargeOptions ?? []).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("Charges")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4">
+            {chargeOptions?.map((charge) => {
+              const chargesArray = watch("charges") as Array<{ chargeId: number; amount: number }> | undefined;
+              const existing = chargesArray?.find((c) => c.chargeId === charge.id);
+              return (
+                <ChargeCheckbox
+                  key={charge.id}
+                  charge={charge}
+                  checked={!!existing}
+                  onToggle={(checked) => {
+                    const current = [...(chargesArray ?? [])];
+                    if (checked) {
+                      current.push({ chargeId: charge.id, amount: charge.amount ?? 0 });
+                    } else {
+                      const idx = current.findIndex((c) => c.chargeId === charge.id);
+                      if (idx >= 0) current.splice(idx, 1);
+                    }
+                    setValue("charges", current, { shouldValidate: true });
+                  }}
+                  amount={existing?.amount}
+                  onAmountChange={(amount) => {
+                    const current = [...(chargesArray ?? [])];
+                    const idx = current.findIndex((c) => c.chargeId === charge.id);
+                    if (idx >= 0) {
+                      current[idx] = { ...current[idx], amount };
+                      setValue("charges", current, { shouldValidate: true });
+                    }
+                  }}
+                  disabled={isSubmitting}
+                />
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Topup Loan Configuration */}
       {mode === "create" && (

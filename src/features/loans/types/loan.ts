@@ -402,23 +402,34 @@ export interface LoanTemplate {
   /** Product dropdown — `GET /v1/loans/template?...` → productOptions (doc §3/§6) */
   productOptions?: Array<{ id: number; name: string; multiDisburseLoan?: boolean }>;
   loanProductOptions?: Array<{ id: number; name: string; multiDisburseLoan?: boolean }>;
-  loanOfficerOptions?: Array<{ id: number; displayName?: string; name?: string }>;
+  loanOfficerOptions?: Array<{ id: number; displayName?: string; name?: string; isLoanOfficer?: boolean }>;
   fundOptions?: Array<{ id: number; name: string }>;
-  loanPurposeOptions?: Array<{ id: number; name: string }>;
+  loanPurposeOptions?: Array<{ id: number; name: string; position?: number }>;
   loanCollateralOptions?: Array<{ id: number; name: string; position?: number }>;
   accountLinkingOptions?: Array<{
     id: number;
     accountNo?: string;
     productName?: string;
+    productId?: number;
     accountType?: { id: number; code: string; value: string };
   }>;
   clientActiveLoanOptions?: Array<{ id: number; accountNo?: string; loanProductName?: string }>;
-  chargeOptions?: Array<{ id: number; name: string; active?: boolean; penalty?: boolean }>;
+  chargeOptions?: Array<{
+    id: number;
+    name: string;
+    active?: boolean;
+    penalty?: boolean;
+    amount?: number;
+    currency?: { code: string; name: string; decimalPlaces: number };
+  }>;
   datatables?: Array<{ registeredTableName: string; entity?: number }>;
+  calendarOptions?: Array<{ id: number; entityType?: { id: number; code: string } }>;
   expectedDisbursementDate?: string;
 
-  currency?: { code: string; name: string; decimalPlaces: number; displaySymbol: string };
+  currency?: { code: string; name: string; decimalPlaces: number; displaySymbol: string; inMultiplesOf?: number };
   principal?: number;
+  approvedPrincipal?: number;
+  proposedPrincipal?: number;
   termFrequency?: number;
   termPeriodFrequencyType?: LoanTemplateOption;
   numberOfRepayments?: number;
@@ -438,11 +449,13 @@ export interface LoanTemplate {
   daysInMonthType?: LoanTemplateOption;
   daysInYearType?: LoanTemplateOption;
   daysInYearTypeId?: number;
-  repaymentStartDateType?: number;
+  repaymentStartDateType?: LoanTemplateOption;
   loanScheduleType?: { id: number; code: string; value: string } | string;
   loanScheduleProcessingType?: { id: number; code: string; value: string } | string;
+  chargeOffBehaviour?: { id: number; code: string; value: string } | string;
   isEqualAmortization?: boolean;
   fixedPrincipalPercentagePerInstallment?: number;
+  fixedLength?: number;
   netDisbursalAmount?: number;
   loanCounter?: number;
   loanProductCounter?: number;
@@ -456,28 +469,54 @@ export interface LoanTemplate {
   interestRecognitionOnDisbursementDate?: boolean;
   enableIncomeCapitalization?: boolean;
   enableBuyDownFee?: boolean;
+  merchantBuyDownFee?: boolean;
   maxOutstandingLoanBalance?: number;
+  isTopup?: boolean;
+  canDisburse?: boolean;
+  fraud?: boolean;
+  chargedOff?: boolean;
+  inArrears?: boolean;
+  isNPA?: boolean;
 
   graceOnPrincipalPayment?: number;
   graceOnInterestPayment?: number;
   graceOnInterestCharged?: number;
   graceOnArrearsAgeing?: number;
   inArrearsTolerance?: number;
+  recurringMoratoriumOnPrincipalPeriods?: number;
+  interestChargedFromDate?: string;
+  expectedFirstRepaymentOnDate?: string;
+  repaymentsStartingFromDate?: string;
+  syncExpectedWithDisbursementDate?: boolean;
+  disallowExpectedDisbursements?: boolean;
   charges?: LoanCharge[];
 
+  /** Option sets from template — all dropdown options come from these arrays */
   amortizationTypeOptions?: LoanTemplateOption[];
   interestTypeOptions?: LoanTemplateOption[];
   interestCalculationPeriodTypeOptions?: LoanTemplateOption[];
-  repaymentPeriodFrequencyTypeOptions?: LoanTemplateOption[];
   termFrequencyTypeOptions?: LoanTemplateOption[];
   repaymentFrequencyTypeOptions?: LoanTemplateOption[];
   interestRateFrequencyTypeOptions?: LoanTemplateOption[];
-  transactionProcessingStrategyOptions?: Array<{ code: string; name: string }>;
+  transactionProcessingStrategyOptions?: Array<{ id: number; code: string; name: string }>;
   loanScheduleTypeOptions?: LoanTemplateOption[];
   loanScheduleProcessingTypeOptions?: LoanTemplateOption[];
   repaymentStartDateTypeOptions?: LoanTemplateOption[];
   repaymentFrequencyNthDayTypeOptions?: LoanTemplateOption[];
   repaymentFrequencyDaysOfWeekTypeOptions?: LoanTemplateOption[];
+  daysInYearTypeOptions?: LoanTemplateOption[];
+  daysInMonthTypeOptions?: LoanTemplateOption[];
+  daysInYearCustomStrategyOptions?: Array<{ id: string; code: string; value: string }>;
+  capitalizedIncomeCalculationTypeOptions?: Array<{ id: string; code: string; value: string }>;
+  capitalizedIncomeStrategyOptions?: Array<{ id: string; code: string; value: string }>;
+  capitalizedIncomeTypeOptions?: Array<{ id: string; code: string; value: string }>;
+  buyDownFeeCalculationTypeOptions?: Array<{ id: string; code: string; value: string }>;
+  buyDownFeeStrategyOptions?: Array<{ id: string; code: string; value: string }>;
+  buyDownFeeIncomeTypeOptions?: Array<{ id: string; code: string; value: string }>;
+  chargeOffBehaviourOptions?: Array<{ id: string; code: string; value: string }>;
+  chargeOffReasonOptions?: Array<{ id: number; name: string; code?: string; value?: string }>;
+  writeOffReasonOptions?: Array<{ id: number; name: string; code?: string; value?: string }>;
+  floatingRateOptions?: Array<{ id: number; name: string; isBaseLendingRate: boolean; isActive: boolean }>;
 }
 
 // ─── Loan Create/Command Requests ────────────────────────────────
