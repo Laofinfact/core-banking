@@ -248,11 +248,11 @@ const DepositAccountDetailPage: React.FC = () => {
     );
 
   const a = account as any;
-  const statusCode = a.status?.code ?? "";
-  const statusConfig = SAVINGS_STATUS_CONFIG[statusCode];
-  const isPending = a.status?.submittedAndPendingApproval === true;
-  const isActive = a.status?.active === true;
-  const isApproved = a.status?.approved === true && !isActive;
+  const statusId = a.status?.id;
+  const statusConfig = SAVINGS_STATUS_CONFIG[String(statusId ?? "")];
+  const isPending = statusId === 100;
+  const isApproved = statusId === 200;
+  const isActive = statusId === 300;
   const subStatus = a.subStatus;
   const isBlocked = !!subStatus?.block;
   const isBlockedCredit = !!subStatus?.blockCredit;

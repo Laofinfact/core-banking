@@ -13,6 +13,10 @@ export interface ClientCollateral {
   total?: number;
   type?: string;
   description?: string;
+  basePrice?: number;
+  pctToBase?: number;
+  unitType?: string;
+  currency?: string;
 }
 
 export interface ClientCollateralRequest {

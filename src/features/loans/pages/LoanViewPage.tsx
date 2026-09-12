@@ -16,6 +16,7 @@ import LoanTransactionsTable from "../components/LoanTransactionsTable";
 import LoanScheduleTable from "../components/LoanScheduleTable";
 import LoanChargesCard from "../components/LoanChargesCard";
 import LoanCollateralCard from "../components/LoanCollateralCard";
+import { LoanCollateralManagementCard } from "@/features/loan-collateral-management";
 import LoanGuarantorsCard from "../components/LoanGuarantorsCard";
 import LoanDelinquencyCard from "../components/LoanDelinquencyCard";
 import LoanNotesCard from "../components/LoanNotesCard";
@@ -178,8 +179,9 @@ const LoanViewPage: FC = () => {
           <LoanChargesCard loanId={loan.id} currencyCode={currencyCode} charges={charges} />
         </TabsContent>
 
-        <TabsContent value="collateral" className="mt-4">
+        <TabsContent value="collateral" className="mt-4 space-y-6">
           <LoanCollateralCard loanId={loan.id} currencyCode={currencyCode} collateral={collateral} />
+          <LoanCollateralManagementCard loanId={loan.id} currencyCode={currencyCode} />
         </TabsContent>
 
         <TabsContent value="guarantors" className="mt-4">

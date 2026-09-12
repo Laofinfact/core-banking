@@ -52,7 +52,7 @@ const DepositAccountsPage: React.FC = () => {
   const stats = useMemo(
     () => ({
       total: totalFilteredRecords,
-      active: data.filter((a) => a.status?.code === "savingsAccountStatusType.active").length,
+      active: data.filter((a) => a.status?.id === 300).length,
       totalBalance: data.reduce((s, a) => s + (a.accountBalance ?? 0), 0),
     }),
     [data, totalFilteredRecords],
@@ -62,12 +62,12 @@ const DepositAccountsPage: React.FC = () => {
     let result = data;
     const q = search.toLowerCase();
     if (q) result = result.filter((a) => (a.clientName ?? "").toLowerCase().includes(q) || a.accountNo.includes(q));
-    if (statusFilter !== "all") result = result.filter((a) => a.status?.code === statusFilter);
+    if (statusFilter !== "all") result = result.filter((a) => a.status?.id === Number(statusFilter));
     return result;
   }, [data, search, statusFilter]);
 
-  const formatCurrency = (n: number, currency = "USD") =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: currency, maximumFractionDigits: 0 }).format(n);
+  const formatCurrency = (n: number, currencyCode = "USD") =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: currencyCode, maximumFractionDigits: 0 }).format(n);
 
   const columns: ColumnDef<SavingsAccount>[] = [
     { key: "accountNo", header: t("Account No"), cell: (r) => <code className="text-xs font-mono">{r.accountNo}</code> },
@@ -91,9 +91,9 @@ const DepositAccountsPage: React.FC = () => {
       key: "status",
       header: t("Status"),
       cell: (r) => {
-        const c = SAVINGS_STATUS_CONFIG[r.status?.code ?? ""];
+        const c = SAVINGS_STATUS_CONFIG[String(r.status?.id ?? "")];
         return (
-          <StatusBadge status={c?.variant ?? "default"} label={c?.label ?? r.status?.code ?? "Unknown"} size="sm" />
+          <StatusBadge status={c?.variant ?? "default"} label={c?.label ?? r.status?.value ?? "Unknown"} size="sm" />
         );
       },
     },
@@ -103,7 +103,7 @@ const DepositAccountsPage: React.FC = () => {
       header: "",
       cell: (r) => (
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-          {r.status?.code?.includes("submitted") && (
+          {r.status?.id === 100 && (
             <Button
               variant="ghost"
               size="sm"
@@ -194,7 +194,7 @@ const DepositAccountsPage: React.FC = () => {
           <StatCard title={t("Total Balance")} value={formatCurrency(stats.totalBalance)} variant="success" />
           <StatCard
             title={t("Dormant/Frozen")}
-            value={data.filter((a) => a.subStatus?.code === "dormant" || a.subStatus?.code === "frozen").length}
+            value={data.filter((a) => a.subStatus?.dormant === true || a.subStatus?.block === true).length}
             variant="warning"
           />
         </div>
@@ -219,8 +219,8 @@ const DepositAccountsPage: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("All")}</SelectItem>
-                {Object.entries(SAVINGS_STATUS_CONFIG).map(([code, cfg]) => (
-                  <SelectItem key={code} value={code}>
+                {Object.entries(SAVINGS_STATUS_CONFIG).map(([id, cfg]) => (
+                  <SelectItem key={id} value={id}>
                     {cfg.label}
                   </SelectItem>
                 ))}

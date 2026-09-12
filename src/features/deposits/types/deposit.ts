@@ -8,7 +8,9 @@ export type SavingsAccountStatus =
   | "Rejected"
   | "Withdrawn by applicant"
   | "Matured"
-  | "Premature Closed";
+  | "Premature Closed"
+  | "Transfer in progress"
+  | "Transfer on hold";
 
 export type DepositAccountType = "savings" | "fixed_deposit" | "recurring_deposit";
 
@@ -136,6 +138,7 @@ export interface SavingsSummary {
   totalDeposits: number;
   totalWithdrawals: number;
   totalInterestEarned: number;
+  totalInterestPosted?: number;
   totalFeesPaid: number;
   totalPenaltyPaid: number;
   accountBalance: number;
@@ -280,6 +283,7 @@ export interface SavingsTransactionRequest {
   routingCode?: string;
   receiptNumber?: string;
   bankNumber?: string;
+  note?: string;
   locale?: string;
   dateFormat?: string;
 }

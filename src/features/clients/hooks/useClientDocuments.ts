@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchClientDocuments,
   fetchClientDocument,
-  downloadClientDocument,
   createClientDocument,
   updateClientDocument,
   deleteClientDocument,

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchClientNotes, fetchClientNote, createClientNote, updateClientNote, deleteClientNote } from "../api/notes";
+import { fetchClientNotes, createClientNote, updateClientNote, deleteClientNote } from "../api/notes";
 import type { ClientNoteRequest } from "../api/notes";
 import { clientKeys } from "./useClients";
 

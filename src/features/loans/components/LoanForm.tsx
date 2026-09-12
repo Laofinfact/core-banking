@@ -87,7 +87,7 @@ const ChargeCheckbox: React.FC<{
             onChange={(e) => onAmountChange(Number(e.target.value))}
             disabled={disabled}
             placeholder={t("Amount")}
-            className="max-w-[180px]"
+            className="max-w-45"
           />
         )}
       </div>

@@ -102,6 +102,7 @@ import RoleFormPage from "@/features/admin/pages/RoleFormPage";
 import RoleDetailPage from "@/features/admin/pages/RoleDetailPage";
 import PermissionsPage from "@/features/admin/pages/PermissionsPage";
 import { CollateralProductListPage, CollateralProductFormPage } from "@/features/collateral-products";
+import { ClientCollateralManagementDetailWrapper } from "@/features/client-collateral-management";
 import { LoanOriginatorListPage, LoanOriginatorFormPage } from "@/features/loan-originators";
 import {
   ExternalAssetOwnerListPage,
@@ -255,6 +256,8 @@ function App() {
                   <Route path="/collateral-products" element={<CollateralProductListPage />} />
                   <Route path="/collateral-products/new" element={<CollateralProductFormPage />} />
                   <Route path="/collateral-products/edit/:id" element={<CollateralProductFormPage />} />
+                  {/* Client Collateral Management */}
+                  <Route path="/clients/:clientId/collaterals/:collateralId" element={<ClientCollateralManagementDetailWrapper />} />
                   {/* Loan Originators */}
                   <Route path="/loan-originators" element={<LoanOriginatorListPage />} />
                   <Route path="/loan-originators/new" element={<LoanOriginatorFormPage />} />

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMakeDeposit, useMakeWithdrawal } from "../hooks/useDepositWithdraw";
+import type { SavingsTransactionRequest } from "../types/deposit";
 
 interface DepositWithdrawDialogProps {
   accountId: number;
@@ -37,22 +38,20 @@ const DepositWithdrawDialog: FC<DepositWithdrawDialogProps> = ({ accountId, type
   const handleSubmit = useCallback(async () => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
-    await mutation.mutateAsync({
-      accountId,
-      payload: {
-        transactionDate: date,
-        transactionAmount: numAmount,
-        paymentTypeId: Number(paymentTypeId),
-        dateFormat: "yyyy-MM-dd",
-        locale: "en",
-        note: note || undefined,
-        accountNumber: accountNumber || undefined,
-        checkNumber: checkNumber || undefined,
-        routingCode: routingCode || undefined,
-        receiptNumber: receiptNumber || undefined,
-        bankNumber: bankNumber || undefined,
-      } as any,
-    });
+    const payload: SavingsTransactionRequest = {
+      transactionDate: date,
+      transactionAmount: numAmount,
+      paymentTypeId: Number(paymentTypeId),
+      dateFormat: "yyyy-MM-dd",
+      locale: "en",
+      note: note || undefined,
+      accountNumber: accountNumber || undefined,
+      checkNumber: checkNumber || undefined,
+      routingCode: routingCode || undefined,
+      receiptNumber: receiptNumber || undefined,
+      bankNumber: bankNumber || undefined,
+    };
+    await mutation.mutateAsync({ accountId, payload });
     setAmount("");
     setNote("");
     setAccountNumber("");

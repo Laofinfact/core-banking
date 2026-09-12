@@ -31,6 +31,9 @@ interface ClientCollateralsProps {
   clientId: number;
 }
 
+const formatCurrency = (v: number, code = "USD") =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: code }).format(v);
+
 const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
   const { t } = useTranslation();
   const { data: collaterals, isLoading } = useClientCollaterals(clientId);
@@ -92,6 +95,8 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
     setDeleteId(null);
   }, [clientId, deleteId, deleteMutation]);
 
+  const getCurrency = (row: ClientCollateral) => row.currency ?? "USD";
+
   const columns: ColumnDef<ClientCollateral>[] = [
     {
       key: "name",
@@ -101,16 +106,43 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
     {
       key: "quantity",
       header: t("clients.collaterals.quantity"),
-      accessorFn: (row) => <span className="text-sm font-mono">{row.quantity}</span>,
+      accessorFn: (row) => (
+        <span className="text-sm font-mono">
+          {row.quantity} {row.unitType ?? ""}
+        </span>
+      ),
+    },
+    {
+      key: "basePrice",
+      header: t("Base Price"),
+      accessorFn: (row) => (
+        <span className="text-sm font-mono">
+          {row.basePrice != null ? formatCurrency(row.basePrice, getCurrency(row)) : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "pctToBase",
+      header: t("Pct to Base"),
+      accessorFn: (row) => (
+        <span className="text-sm font-mono">{row.pctToBase != null ? `${row.pctToBase}%` : "—"}</span>
+      ),
     },
     {
       key: "total",
       header: t("clients.collaterals.totalValue"),
       accessorFn: (row) => (
         <span className="text-sm font-mono">
-          {row.total != null
-            ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(row.total)
-            : "—"}
+          {row.total != null ? formatCurrency(row.total, getCurrency(row)) : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "totalCollateral",
+      header: t("Total Collateral"),
+      accessorFn: (row) => (
+        <span className="text-sm font-mono font-semibold">
+          {row.totalCollateral != null ? formatCurrency(row.totalCollateral, getCurrency(row)) : "—"}
         </span>
       ),
     },
@@ -162,7 +194,7 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
             columns={columns}
             data={collaterals ?? []}
             loading={isLoading}
-            minWidth={600}
+            minWidth={900}
             emptyState={{ icon: <Gem className="h-8 w-8 text-gray-300" />, message: t("clients.collaterals.noCollaterals") }}
           />
         </CardContent>

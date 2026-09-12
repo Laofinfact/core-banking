@@ -81,10 +81,11 @@ const RecurringDepositsPage: React.FC = () => {
       key: "status",
       header: t("Status"),
       cell: (r) => {
-        const c = RECURRING_DEPOSIT_STATUS_CONFIG[r.status?.code ?? ""] ?? {
+        const c = RECURRING_DEPOSIT_STATUS_CONFIG[String(r.status?.id ?? "")] ?? {
           label: r.status?.value ?? "Unknown",
+          variant: "outline" as const,
         };
-        return <StatusBadge status={c.label} />;
+        return <StatusBadge status={c.variant} label={c.label} />;
       },
     },
     {
