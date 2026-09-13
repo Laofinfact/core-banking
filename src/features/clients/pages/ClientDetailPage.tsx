@@ -19,6 +19,7 @@ import {
   Plus,
   Calendar,
   CalendarClock,
+  ShieldCheck,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -153,10 +154,14 @@ const ClientDetailPage: FC = () => {
                     {t("Activate")}
                   </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/edit`)}>
-                  <Pencil className="mr-1 h-4 w-4" />
-                  {t("Edit")}
-                </Button>
+                 <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/collaterals-management`)}>
+                   <ShieldCheck className="mr-1 h-4 w-4" />
+                   {t("Collateral Management")}
+                 </Button>
+                 <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/edit`)}>
+                   <Pencil className="mr-1 h-4 w-4" />
+                   {t("Edit")}
+                 </Button>
                 <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/calendars`)}>
                   <Calendar className="mr-1 h-4 w-4" />
                   {t("Calendars")}

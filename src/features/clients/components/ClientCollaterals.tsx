@@ -1,6 +1,7 @@
 import { type FC, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2, Gem, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Gem, Loader2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -36,6 +37,7 @@ const formatCurrency = (v: number, code = "USD") =>
 
 const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { data: collaterals, isLoading } = useClientCollaterals(clientId);
   const { data: options } = useCollateralOptions();
   const createMutation = useCreateClientCollateral();
@@ -151,6 +153,17 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
       header: t("clients.collaterals.actions"),
       accessorFn: (row) => (
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/clients/${clientId}/collaterals/${row.id}`);
+            }}
+            title={t("View Detail")}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"

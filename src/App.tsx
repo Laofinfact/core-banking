@@ -103,6 +103,8 @@ import RoleDetailPage from "@/features/admin/pages/RoleDetailPage";
 import PermissionsPage from "@/features/admin/pages/PermissionsPage";
 import { CollateralProductListPage, CollateralProductFormPage } from "@/features/collateral-products";
 import { ClientCollateralManagementDetailWrapper } from "@/features/client-collateral-management";
+import ClientCollateralManagementListPage from "@/features/client-collateral-management/pages/ClientCollateralManagementListPage";
+import LoanCollateralManagementPage from "@/features/loan-collateral-management/pages/LoanCollateralManagementPage";
 import { LoanOriginatorListPage, LoanOriginatorFormPage } from "@/features/loan-originators";
 import {
   ExternalAssetOwnerListPage,
@@ -257,6 +259,7 @@ function App() {
                   <Route path="/collateral-products/new" element={<CollateralProductFormPage />} />
                   <Route path="/collateral-products/edit/:id" element={<CollateralProductFormPage />} />
                   {/* Client Collateral Management */}
+                  <Route path="/clients/:clientId/collaterals-management" element={<ClientCollateralManagementListPage />} />
                   <Route path="/clients/:clientId/collaterals/:collateralId" element={<ClientCollateralManagementDetailWrapper />} />
                   {/* Loan Originators */}
                   <Route path="/loan-originators" element={<LoanOriginatorListPage />} />
@@ -277,6 +280,7 @@ function App() {
                   <Route path="/rescheduling/:id" element={<RescheduleRequestDetailPage />} />
                   <Route path="/loans/reassign" element={<LoanReassignmentPage />} />
                   <Route path="/loans/:loanId/transactions/:transactionType" element={<LoanTransactionFormPage />} />
+                  <Route path="/loans/:loanId/collateral-management" element={<LoanCollateralManagementPage />} />
                   {/* Delinquency Buckets */}
                   <Route path="/delinquency-buckets" element={<DelinquencyBucketListPage />} />
                   <Route path="/delinquency-buckets/new" element={<DelinquencyBucketFormPage />} />

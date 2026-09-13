@@ -1,7 +1,7 @@
 import { type FC, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Plus, Search, Pencil, Trash2, Gem } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Gem, Users } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -48,10 +48,20 @@ const CollateralProductListPage: FC = () => {
       header: "",
       cell: (r) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/collateral-products/edit/${r.id}`)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/collateral-products/edit/${r.id}`)}
+            title={t("Edit")}
+          >
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDeleteTarget(r)}
+            title={t("Delete")}
+          >
             <Trash2 className="h-4 w-4 text-red-500" />
           </Button>
         </div>

@@ -18,3 +18,4 @@ export {
 } from "./hooks/useLoanCollateralManagement";
 
 export { default as LoanCollateralManagementCard } from "./components/LoanCollateralManagementCard";
+export { default as LoanCollateralManagementPage } from "./pages/LoanCollateralManagementPage";

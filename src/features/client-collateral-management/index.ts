@@ -39,3 +39,4 @@ export { default as ClientCollateralManagementList } from "./components/ClientCo
 export { default as ClientCollateralManagementDetail } from "./components/ClientCollateralManagementDetail";
 export { default as LoanCollateralSelector } from "./components/LoanCollateralSelector";
 export { default as ClientCollateralManagementDetailWrapper } from "./components/ClientCollateralManagementDetailWrapper";
+export { default as ClientCollateralManagementListPage } from "./pages/ClientCollateralManagementListPage";
