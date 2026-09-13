@@ -15,6 +15,7 @@ export type {
   SavingsTransactionTemplate,
   FixedDepositAccount,
   FixedDepositListParams,
+  FixedDepositAccountListResponse,
   RecurringDepositAccount,
   RecurringDepositListParams,
   RecurringDepositAccountCreateRequest,

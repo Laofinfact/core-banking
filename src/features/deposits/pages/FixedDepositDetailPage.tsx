@@ -247,7 +247,7 @@ const FixedDepositDetailPage: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-600">
-            {t("Failed to load")}: {String(error)}
+            {t("Failed to load fixed deposit")}: {error instanceof Error ? error.message : t("Unknown error")}
           </p>
           <Button variant="outline" className="mt-2" onClick={() => refetch()}>
             {t("Retry")}
@@ -257,8 +257,7 @@ const FixedDepositDetailPage: React.FC = () => {
     );
   }
 
-  const statusCode = fd.status?.code ?? "";
-  const statusConfig = FIXED_DEPOSIT_STATUS_CONFIG[statusCode];
+  const statusConfig = FIXED_DEPOSIT_STATUS_CONFIG[String(fd.status?.id ?? "")];
   const statusId = fd.status?.id;
   const isPending = statusId === 100;
   const isApproved = statusId === 200;
@@ -386,7 +385,7 @@ const FixedDepositDetailPage: React.FC = () => {
                   onClick={() => {
                     setCloseMode("premature");
                     setCloseDialogOpen(true);
-                    setOnAccountClosureId("200");
+                    setOnAccountClosureId("100");
                   }}
                   className="text-amber-600"
                 >

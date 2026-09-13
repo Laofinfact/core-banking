@@ -492,8 +492,8 @@ const CreateFixedDepositPage: React.FC = () => {
             <div className="flex items-center gap-3 pt-2">
               <Switch
                 id="preClosurePenalApplicable"
+                checked={preClosurePenalApplicable ?? false}
                 onCheckedChange={(v) => setValue("preClosurePenalApplicable", v)}
-                defaultChecked={template?.preClosurePenalApplicable ?? false}
               />
               <label className="block text-sm font-medium" htmlFor="preClosurePenalApplicable">
                 {t("Apply Pre-closure Penalty")}
@@ -580,7 +580,7 @@ const CreateFixedDepositPage: React.FC = () => {
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            {isSubmitting ? t("Creating...") : t("Create FD")}
+             {isSubmitting ? (isEdit ? t("Updating...") : t("Creating...")) : (isEdit ? t("Update FD") : t("Create FD"))}
           </Button>
         </div>
       </form>

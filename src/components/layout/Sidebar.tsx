@@ -1,4 +1,4 @@
-import { type FC, useState, useCallback } from "react";
+import { type FC, useState, useCallback, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -51,6 +51,7 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSidebarSearch } from "@/hooks/useSidebarSearch";
 
 interface NavItem {
   label: string;
@@ -490,14 +491,15 @@ interface NavSectionProps {
   section: NavSectionConfig;
   collapsed: boolean;
   isActive: (path: string, exact?: boolean) => boolean;
+  forcedOpen?: boolean;
 }
 
-const NavSection: FC<NavSectionProps> = ({ section, collapsed, isActive }) => {
+const NavSection: FC<NavSectionProps> = ({ section, collapsed, isActive, forcedOpen }) => {
   const [open, setOpen] = useState(section.defaultOpen ?? true);
   const anyActive = section.items.some((item) => isActive(item.path));
 
-  // Auto-open when a child is active
-  const isExpanded = collapsed ? false : open || anyActive;
+  // Auto-open when a child is active OR when search forces it
+  const isExpanded = collapsed ? false : forcedOpen || open || anyActive;
 
   const toggleOpen = useCallback(() => {
     if (!collapsed) setOpen((prev) => !prev);
@@ -544,8 +546,6 @@ const NavSection: FC<NavSectionProps> = ({ section, collapsed, isActive }) => {
 };
 
 // ─── Sidebar ───────────────────────────────────────────────────
-const bottomNavItems: NavItem[] = [{ label: "Settings", path: "/settings", icon: Settings }];
-
 interface SidebarProps {
   drawerMode?: boolean;
   drawerOpen?: boolean;
@@ -557,6 +557,9 @@ const Sidebar: FC<SidebarProps> = ({ drawerMode = false, drawerOpen = false }) =
   const { t } = useTranslation();
   const sections = getSections(t);
 
+  const { query, setQuery, selectedIndex, filteredSections, handleKeyDown, inputRef, isSearching, clearSearch } =
+    useSidebarSearch(sections);
+
   const isActive = useCallback(
     (path: string, exact?: boolean) => {
       if (path === "/") return location.pathname === "/";
@@ -567,6 +570,23 @@ const Sidebar: FC<SidebarProps> = ({ drawerMode = false, drawerOpen = false }) =
     },
     [location.pathname],
   );
+
+  // Cmd/Ctrl+K to focus sidebar search
+  useEffect(() => {
+    function handleKeydown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  }, [inputRef]);
+
+  // Clear search on route change
+  useEffect(() => {
+    clearSearch();
+  }, [location.pathname, clearSearch]);
 
   // In drawer mode, always show full sidebar (never collapsed)
   const collapsed = drawerMode ? false : sidebarCollapsed;
@@ -619,9 +639,103 @@ const Sidebar: FC<SidebarProps> = ({ drawerMode = false, drawerOpen = false }) =
 
       {/* Scrollable navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
-        {sections.map((section) => (
-          <NavSection key={section.id} section={section} collapsed={sidebarCollapsed} isActive={isActive} />
-        ))}
+        {/* Search input */}
+        {!collapsed && (
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t("Search menu...")}
+                className={cn(
+                  "h-9 w-full rounded-md border border-gray-200 bg-gray-50 pl-8 pr-14 text-sm",
+                  "placeholder:text-gray-400 focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F]/50",
+                  "dark:border-gray-700 dark:bg-gray-800 dark:placeholder:text-gray-500",
+                  "dark:focus:border-[#D32F2F]",
+                )}
+              />
+              <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500">
+                {t("⌘K")}
+              </kbd>
+            </div>
+          </div>
+        )}
+
+        {/* Search results or normal sections */}
+        {isSearching ? (
+          filteredSections.length > 0 ? (
+            <TooltipProvider delayDuration={300} skipDelayDuration={0}>
+              {(() => {
+                let flatIndex = 0;
+                return filteredSections.map((section) => {
+                  const sectionStart = flatIndex;
+                  flatIndex += section.items.length;
+
+                  return (
+                    <div key={section.id} className="px-3 pb-1">
+                      <span className="mb-1 block px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                        {section.title}
+                      </span>
+                      <ul className="flex flex-col gap-1">
+                        {section.items.map((item, idx) => {
+                          const itemFlatIndex = sectionStart + idx;
+                          const Icon = item.icon;
+                          const active = isActive(item.path, item.exact);
+                          const isSelected = itemFlatIndex === selectedIndex;
+
+                          return (
+                            <li key={item.path}>
+                              <NavLink
+                                to={item.path}
+                                onClick={clearSearch}
+                                className={cn(
+                                  "group relative flex items-center rounded-lg transition-all duration-200",
+                                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D32F2F]/50",
+                                  "h-10 gap-3 px-3",
+                                  active
+                                    ? "bg-[#D32F2F]/10 text-[#D32F2F] dark:bg-[#D32F2F]/20 dark:text-[#D32F2F]"
+                                    : isSelected
+                                      ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+                                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100",
+                                )}
+                              >
+                                {active && (
+                                  <span className="absolute left-0 top-1/2 h-6 w-0.75 -translate-x-3.25 -translate-y-1/2 rounded-r-full bg-[#D32F2F]" />
+                                )}
+                                <Icon
+                                  className={cn(
+                                    "h-5 w-5 shrink-0 transition-transform duration-200",
+                                    active && "scale-110",
+                                  )}
+                                />
+                                <span className="truncate text-sm font-medium">
+                                  {t(item.translationKey || item.label)}
+                                </span>
+                              </NavLink>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                });
+              })()}
+            </TooltipProvider>
+          ) : (
+            <div className="px-6 py-8 text-center">
+              <Search className="mx-auto mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t("No menu found")}</p>
+            </div>
+          )
+        ) : (
+          sections.map((section) => (
+            <NavSection key={section.id} section={section} collapsed={sidebarCollapsed} isActive={isActive} />
+          ))
+        )}
       </nav>
 
       {/* TODO: Delete if do not need */}

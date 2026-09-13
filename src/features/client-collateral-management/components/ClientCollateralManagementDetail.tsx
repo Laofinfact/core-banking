@@ -16,10 +16,7 @@ interface ClientCollateralManagementDetailProps {
 const formatCurrency = (v: number, code = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: code }).format(v);
 
-const ClientCollateralManagementDetail: FC<ClientCollateralManagementDetailProps> = ({
-  clientId,
-  collateralId,
-}) => {
+const ClientCollateralManagementDetail: FC<ClientCollateralManagementDetailProps> = ({ clientId, collateralId }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: collateral, isLoading } = useClientCollateralManagement(clientId, collateralId);
@@ -75,9 +72,7 @@ const ClientCollateralManagementDetail: FC<ClientCollateralManagementDetailProps
             </div>
             <div className="space-y-1">
               <span className="text-sm text-gray-500">{t("Base Price")}</span>
-              <p className="font-medium font-mono">
-                {formatCurrency(collateral.basePrice, collateral.currency)}
-              </p>
+              <p className="font-medium font-mono">{formatCurrency(collateral.basePrice, collateral.currency)}</p>
             </div>
             <div className="space-y-1">
               <span className="text-sm text-gray-500">{t("Pct to Base")}</span>
@@ -85,13 +80,11 @@ const ClientCollateralManagementDetail: FC<ClientCollateralManagementDetailProps
             </div>
             <div className="space-y-1">
               <span className="text-sm text-gray-500">{t("Total Value")}</span>
-              <p className="font-medium font-mono">
-                {formatCurrency(collateral.total, collateral.currency)}
-              </p>
+              <p className="font-medium font-mono">{formatCurrency(collateral.total, collateral.currency)}</p>
             </div>
             <div className="space-y-1">
               <span className="text-sm text-gray-500">{t("Total Collateral")}</span>
-              <p className="font-medium font-mono font-semibold text-green-700">
+              <p className="font-medium font-mono text-green-700">
                 {formatCurrency(collateral.totalCollateral, collateral.currency)}
               </p>
             </div>

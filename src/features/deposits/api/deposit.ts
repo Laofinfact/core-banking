@@ -18,6 +18,7 @@ import type {
   SavingsProductCreateRequest,
   FixedDepositAccount,
   FixedDepositListParams,
+  FixedDepositAccountListResponse,
   RecurringDepositAccount,
   RecurringDepositAccountListResponse,
   RecurringDepositListParams,
@@ -341,9 +342,9 @@ export async function updateFixedDepositAccount(
 
 // ─── Fetch Fixed Deposits (10.1, 10.3) ────────────────────────
 
-export async function fetchFixedDepositAccounts(params: FixedDepositListParams = {}): Promise<FixedDepositAccount[]> {
-  const { data } = await client.get<FixedDepositAccount[]>("/fixeddepositaccounts", { params });
-  return data ?? [];
+export async function fetchFixedDepositAccounts(params: FixedDepositListParams = {}): Promise<FixedDepositAccountListResponse> {
+  const { data } = await client.get<FixedDepositAccountListResponse>("/fixeddepositaccounts", { params: { paged: true, ...params } });
+  return data;
 }
 
 export async function fetchFixedDepositAccount(accountId: number | string): Promise<FixedDepositAccount> {

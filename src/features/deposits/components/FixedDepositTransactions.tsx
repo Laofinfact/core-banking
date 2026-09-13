@@ -1,16 +1,17 @@
 import { type FC, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Undo2, ArrowLeftRight, Loader2 } from "lucide-react";
+import { Undo2, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { useFixedDepositTransactions, useUndoFixedDepositTransaction } from "../hooks/useFixedDepositTransactions";
 import type { FixedDepositTransaction } from "../api/deposit";
 import type { ColumnDef } from "@/components/shared/DataTable";
 
-const formatCurrency = (currency?: string, n?: number) =>
-  n != null ? new Intl.NumberFormat("en-US", { style: "currency", currency: currency ?? "USD" }).format(n) : "—";
+const formatCurrency = (currencyCode?: string, n?: number) =>
+  n != null ? new Intl.NumberFormat("en-US", { style: "currency", currency: currencyCode ?? "USD" }).format(n) : "—";
 
 interface FixedDepositTransactionsProps {
   accountId: number;
@@ -28,14 +29,12 @@ const FixedDepositTransactions: FC<FixedDepositTransactionsProps> = ({ accountId
     async (transactionId: number) => {
       setUndoingId(transactionId);
       try {
-        if (window.confirm(t("Undo this transaction? It will be reversed."))) {
-          await undoMutation.mutateAsync({ accountId, transactionId });
-        }
+        await undoMutation.mutateAsync({ accountId, transactionId });
       } finally {
         setUndoingId(null);
       }
     },
-    [accountId, undoMutation, t],
+    [accountId, undoMutation],
   );
 
   const columns: ColumnDef<FixedDepositTransaction>[] = [
@@ -88,16 +87,12 @@ const FixedDepositTransactions: FC<FixedDepositTransactionsProps> = ({ accountId
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                handleUndo(row.id);
+                setUndoingId(row.id);
               }}
-              disabled={undoingId === row.id}
+              disabled={undoMutation.isPending}
               title={t("Undo")}
             >
-              {undoingId === row.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Undo2 className="h-4 w-4 text-amber-500" />
-              )}
+              <Undo2 className="h-4 w-4 text-amber-500" />
             </Button>
           )}
         </div>
@@ -122,6 +117,17 @@ const FixedDepositTransactions: FC<FixedDepositTransactionsProps> = ({ accountId
           />
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={undoingId !== null}
+        onOpenChange={() => setUndoingId(null)}
+        title={t("Undo Transaction")}
+        description={t("Undo this transaction? It will be reversed.")}
+        onConfirm={() => undoingId && handleUndo(undoingId)}
+        variant="default"
+        confirmLabel={t("Undo")}
+        loading={undoMutation.isPending}
+      />
     </div>
   );
 };

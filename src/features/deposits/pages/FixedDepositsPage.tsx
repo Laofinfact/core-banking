@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Wallet, TrendingUp, Clock, Eye } from "lucide-react";
+import { Search, Plus, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { StatCard } from "@/components/shared/StatCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
@@ -33,19 +32,15 @@ const FixedDepositsPage: React.FC = () => {
     isError: fdError,
   } = useFixedDepositAccounts({ limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE });
 
-  const fds = fdData ?? [];
-
-  const fdStats = {
-    active: fds.filter((f) => f.status?.code?.includes("active")).length,
-    totalValue: fds.reduce((s, f) => s + (f.depositAmount ?? 0), 0),
-    matured: fds.filter((f) => f.status?.code?.includes("matured")).length,
-  };
+  const fds = fdData?.pageItems ?? [];
+  const totalFilteredRecords = fdData?.totalFilteredRecords ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalFilteredRecords / PAGE_SIZE));
 
   const filtered = useMemo(() => {
     let result = fds;
     const q = search.toLowerCase();
-    if (q) result = result.filter((f) => (f.clientName ?? "").toLowerCase().includes(q) || f.accountNo.includes(q));
-    if (statusFilter !== "all") result = result.filter((f) => f.status?.code === statusFilter);
+    if (q) result = result.filter((f: FixedDepositAccount) => (f.clientName ?? "").toLowerCase().includes(q) || f.accountNo.includes(q));
+    if (statusFilter !== "all") result = result.filter((f: FixedDepositAccount) => f.status?.id === Number(statusFilter));
     return result;
   }, [fds, search, statusFilter]);
 
@@ -128,8 +123,8 @@ const FixedDepositsPage: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("All")}</SelectItem>
-                {Object.entries(FIXED_DEPOSIT_STATUS_CONFIG).map(([code, cfg]) => (
-                  <SelectItem key={code} value={code}>
+                {Object.entries(FIXED_DEPOSIT_STATUS_CONFIG).map(([id, cfg]) => (
+                  <SelectItem key={id} value={id}>
                     {cfg.label}
                   </SelectItem>
                 ))}
@@ -149,14 +144,16 @@ const FixedDepositsPage: React.FC = () => {
           ) : (
             <>
               <DataTable columns={columns} data={filtered} emptyState={{ message: t("No fixed deposits found") }} />
-              {fdData && fdData.length > PAGE_SIZE && (
-                <Pagination
-                  currentPage={page}
-                  totalPages={Math.ceil(fdData.length / PAGE_SIZE)}
-                  onPageChange={setPage}
-                  totalItems={fdData.length}
-                  pageSize={PAGE_SIZE}
-                />
+              {totalPages > 1 && (
+                <div className="mt-4">
+                  <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    totalItems={totalFilteredRecords}
+                    pageSize={PAGE_SIZE}
+                  />
+                </div>
               )}
             </>
           )}

@@ -349,6 +349,11 @@ export interface FixedDepositListParams {
   status?: number;
 }
 
+export interface FixedDepositAccountListResponse {
+  totalFilteredRecords: number;
+  pageItems: FixedDepositAccount[];
+}
+
 export interface FixedDepositAccountCreateRequest {
   clientId: number;
   productId: number;
