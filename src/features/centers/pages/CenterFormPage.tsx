@@ -24,7 +24,10 @@ function getCenterFormSchema(t: (key: string) => string) {
   return z
     .object({
       name: z.string({ message: t("Name is required") }).min(1, t("Name is required")),
-      officeId: z.number({ message: t("Office is required") }).int().positive(t("Office is required")),
+      officeId: z
+        .number({ message: t("Office is required") })
+        .int()
+        .positive(t("Office is required")),
       staffId: z.number().optional().or(z.literal("")),
       externalId: z.string().optional().or(z.literal("")),
       active: z.boolean().default(true),
@@ -185,6 +188,7 @@ const CenterFormPage: FC = () => {
               onChange={(v) => setValue("officeId", Number(v), { shouldValidate: true })}
               disabled={isEditMode || isSubmitting}
               error={errors.officeId?.message}
+              isLabelHidden={false}
             />
 
             <div className="flex flex-col gap-1.5">

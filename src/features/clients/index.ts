@@ -204,7 +204,7 @@ export type { ClientImageParams, ClientImageCreateResponse, ClientUploadTemplate
 
 // API — Client Obligee Details
 export { fetchClientObligeeDetails } from "./api/obligee";
-export type { ClientObligeeDetails, ClientObligeeDetailsResponse } from "./api/obligee";
+export type { ClientObligeeDetailsResponse } from "./api/obligee";
 
 // Hooks
 export { useClients, useClientPages, clientKeys } from "./hooks/useClients";

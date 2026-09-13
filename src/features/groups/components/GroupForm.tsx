@@ -165,6 +165,7 @@ const GroupForm: FC<GroupFormProps> = ({
             disabled={isEditMode || isSubmitting}
             error={errors.officeId?.message}
             label={t("Office")}
+            isLabelHidden={false}
           />
 
           {/* Staff dropdown */}

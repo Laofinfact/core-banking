@@ -117,6 +117,7 @@ const TellerFormPage: FC = () => {
               value={watch("officeId")}
               onChange={(v) => setValue("officeId", v, { shouldValidate: true })}
               error={errors.officeId?.message}
+              isLabelHidden={false}
             />
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Teller Name *")}</label>
@@ -124,7 +125,12 @@ const TellerFormPage: FC = () => {
             </div>
             <div>
               <Label htmlFor="description">{t("Description")}</Label>
-              <Textarea id="description" {...register("description")} placeholder={t("Optional description")} rows={2} />
+              <Textarea
+                id="description"
+                {...register("description")}
+                placeholder={t("Optional description")}
+                rows={2}
+              />
             </div>
             <div>
               <Label>{t("Status *")}</Label>

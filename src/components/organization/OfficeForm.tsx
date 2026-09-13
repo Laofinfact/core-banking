@@ -58,6 +58,7 @@ const OfficeForm: React.FC<OfficeFormProps> = ({
         includeNone={t("None (root office)")}
         label={t("Parent Office")}
         disabled={isSubmitting}
+        isLabelHidden={false}
       />
 
       {/* Opening Date */}

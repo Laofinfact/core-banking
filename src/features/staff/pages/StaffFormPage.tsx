@@ -23,7 +23,10 @@ type StaffFormValues = z.infer<ReturnType<typeof getStaffFormSchema>>;
 
 function getStaffFormSchema(t: (key: string) => string) {
   return z.object({
-    officeId: z.number({ message: t("Office is required") }).int().positive(),
+    officeId: z
+      .number({ message: t("Office is required") })
+      .int()
+      .positive(),
     firstname: z.string().min(1, t("First name is required")).max(50),
     lastname: z.string().min(1, t("Last name is required")).max(50),
     isLoanOfficer: z.boolean(),
@@ -33,18 +36,19 @@ function getStaffFormSchema(t: (key: string) => string) {
       .string()
       .optional()
       .or(z.literal(""))
-      .refine(
-        (val) => !val || /^\+?[0-9]{7,15}$/.test(val),
-        { message: t("Mobile number must be 7-15 digits, optionally starting with +") }
-      ),
-    emailAddress: z.string().optional().or(z.literal("")).refine(
-      (val) => !val || val.length <= 50,
-      { message: t("Email must be 50 characters or less") }
-    ),
-    externalId: z.string().optional().or(z.literal("")).refine(
-      (val) => !val || val.length <= 100,
-      { message: t("External ID must be 100 characters or less") }
-    ),
+      .refine((val) => !val || /^\+?[0-9]{7,15}$/.test(val), {
+        message: t("Mobile number must be 7-15 digits, optionally starting with +"),
+      }),
+    emailAddress: z
+      .string()
+      .optional()
+      .or(z.literal(""))
+      .refine((val) => !val || val.length <= 50, { message: t("Email must be 50 characters or less") }),
+    externalId: z
+      .string()
+      .optional()
+      .or(z.literal(""))
+      .refine((val) => !val || val.length <= 100, { message: t("External ID must be 100 characters or less") }),
   });
 }
 
@@ -162,7 +166,9 @@ const StaffFormPage: FC = () => {
       isLoanOfficer: pendingValues.isLoanOfficer ?? false,
       isActive: false,
       forceStatus: true,
-      joiningDate: pendingValues.joiningDate ? (currentDate(pendingValues.joiningDate) ?? pendingValues.joiningDate) : undefined,
+      joiningDate: pendingValues.joiningDate
+        ? (currentDate(pendingValues.joiningDate) ?? pendingValues.joiningDate)
+        : undefined,
       mobileNo: pendingValues.mobileNo || undefined,
       emailAddress: pendingValues.emailAddress || undefined,
       externalId: pendingValues.externalId || undefined,
@@ -213,7 +219,9 @@ const StaffFormPage: FC = () => {
     <div className="p-6 max-w-2xl m-auto space-y-6">
       <PageHeader
         title={isEdit ? t("Edit Staff") : t("New Staff")}
-        description={isEdit ? t('Editing "{{name}}"', { name: staffMember?.displayName ?? "" }) : t("Create a new staff member")}
+        description={
+          isEdit ? t('Editing "{{name}}"', { name: staffMember?.displayName ?? "" }) : t("Create a new staff member")
+        }
         actions={
           <Button variant="outline" onClick={() => navigate("/staff")}>
             <ArrowLeft className="mr-2 h-4 w-4" /> {t("Back")}
@@ -236,12 +244,17 @@ const StaffFormPage: FC = () => {
               disabled={false}
               error={errors.officeId?.message}
               allowedParents={isEdit ? allowedOffices : undefined}
+              isLabelHidden={false}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium">{t("First Name *")}</label>
-                <Input {...register("firstname")} placeholder={t("Enter first name")} error={errors.firstname?.message} />
+                <Input
+                  {...register("firstname")}
+                  placeholder={t("Enter first name")}
+                  error={errors.firstname?.message}
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium">{t("Last Name *")}</label>
@@ -280,17 +293,30 @@ const StaffFormPage: FC = () => {
 
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Mobile No")}</label>
-              <Input {...register("mobileNo")} placeholder={t("Enter mobile number")} error={errors.mobileNo?.message} />
+              <Input
+                {...register("mobileNo")}
+                placeholder={t("Enter mobile number")}
+                error={errors.mobileNo?.message}
+              />
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Email Address")}</label>
-              <Input type="email" {...register("emailAddress")} placeholder={t("Enter email address")} error={errors.emailAddress?.message} />
+              <Input
+                type="email"
+                {...register("emailAddress")}
+                placeholder={t("Enter email address")}
+                error={errors.emailAddress?.message}
+              />
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("External ID")}</label>
-              <Input {...register("externalId")} placeholder={t("Optional external identifier")} error={errors.externalId?.message} />
+              <Input
+                {...register("externalId")}
+                placeholder={t("Optional external identifier")}
+                error={errors.externalId?.message}
+              />
             </div>
           </CardContent>
         </Card>
@@ -329,7 +355,9 @@ const StaffFormPage: FC = () => {
               {t("Confirm Deactivation")}
             </DialogTitle>
             <DialogDescription>
-              {t("This staff member has assigned clients, groups, loans, or savings accounts. Deactivating may affect these assignments.")}
+              {t(
+                "This staff member has assigned clients, groups, loans, or savings accounts. Deactivating may affect these assignments.",
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">

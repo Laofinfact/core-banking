@@ -254,6 +254,7 @@ const CreateDepositAccountPage: React.FC = () => {
                 setValue("clientId", 0);
               }}
               disabled={isEditMode}
+              isLabelHidden={false}
             />
             <ClientSearch
               value={clientId}

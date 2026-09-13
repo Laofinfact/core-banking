@@ -268,7 +268,8 @@ const CreateFixedDepositPage: React.FC = () => {
                 setValue("clientId", 0);
               }}
               error={errors.officeId?.message}
-              label={t("Office")}
+              label={t("Office") + " *"}
+              isLabelHidden={false}
             />
             <ClientSearch
               value={clientId}
@@ -580,7 +581,7 @@ const CreateFixedDepositPage: React.FC = () => {
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-             {isSubmitting ? (isEdit ? t("Updating...") : t("Creating...")) : (isEdit ? t("Update FD") : t("Create FD"))}
+            {isSubmitting ? (isEdit ? t("Updating...") : t("Creating...")) : isEdit ? t("Update FD") : t("Create FD")}
           </Button>
         </div>
       </form>

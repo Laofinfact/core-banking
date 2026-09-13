@@ -23,7 +23,7 @@ import {
   useDeleteClientCharge,
 } from "../hooks/useClientCharges";
 import { useCharges } from "@/features/charges/hooks/useCharges";
-import type { ClientCharge } from "../api/charges";
+import type { ClientCharge, PostClientChargeRequest } from "../api/charges";
 import { formatClientDate } from "../utils/client";
 
 const chargeSchema = z.object({
@@ -76,14 +76,14 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
 
   const onSubmit = useCallback(
     async (values: ChargeFormValues) => {
-      const payload = {
+      const payload: PostClientChargeRequest = {
         chargeId: Number(values.chargeId),
         amount: Number(values.amount),
         dateFormat: "yyyy-MM-dd",
         locale: "en",
+        ...(values.dueDate ? { dueDate: values.dueDate } : {}),
       };
-      if (values.dueDate) (payload as Record<string, unknown>).dueDate = values.dueDate;
-      await createMutation.mutateAsync({ clientId, payload: payload as Record<string, unknown> });
+      await createMutation.mutateAsync({ clientId, payload });
       setDialogOpen(false);
     },
     [clientId, createMutation, setDialogOpen],

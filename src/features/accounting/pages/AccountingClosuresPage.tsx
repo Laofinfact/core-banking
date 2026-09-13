@@ -136,7 +136,9 @@ const AccountingClosuresPage: React.FC = () => {
       <div className="space-y-6">
         <PageHeader title={t("Accounting Closures")} description={t("Lock journal entry posting per office")} />
         <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
-          <span className="text-sm">{t("Failed to load:")}: {error?.message ?? t("Unknown error")}</span>
+          <span className="text-sm">
+            {t("Failed to load:")}: {error?.message ?? t("Unknown error")}
+          </span>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             {t("Retry")}
           </Button>
@@ -168,6 +170,7 @@ const AccountingClosuresPage: React.FC = () => {
             <OfficeSelect
               value={officeId ? String(officeId) : ""}
               onChange={(v) => setOfficeId(Number(v))}
+              isLabelHidden={false}
             />
             <div className="space-y-1.5">
               <Label>{t("Closing Date")} *</Label>
@@ -199,11 +202,7 @@ const AccountingClosuresPage: React.FC = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t("Closures")}</CardTitle>
-          <OfficeSelect
-            value={officeFilter}
-            onChange={setOfficeFilter}
-            includeAll={t("All Offices")}
-          />
+          <OfficeSelect value={officeFilter} onChange={setOfficeFilter} includeAll={t("All Offices")} />
         </CardHeader>
         <CardContent>
           {isLoading ? (

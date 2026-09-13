@@ -390,6 +390,7 @@ const CreateRecurringDepositPage: React.FC = () => {
                 setValue("clientId", "");
               }}
               label={t("Office *")}
+              isLabelHidden={false}
             />
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Client")} *</label>
