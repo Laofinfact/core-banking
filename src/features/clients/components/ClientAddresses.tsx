@@ -58,7 +58,6 @@ const ClientAddresses: FC<ClientAddressesProps> = ({ clientId }) => {
     handleSubmit,
     reset,
     setValue,
-    formState: { errors },
   } = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
   });

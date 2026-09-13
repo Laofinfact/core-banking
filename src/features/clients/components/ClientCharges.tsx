@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,12 +17,12 @@ import { Loader2 } from "lucide-react";
 import type { ColumnDef } from "@/components/shared/DataTable";
 import {
   useClientCharges,
-  useClientChargesTemplate,
   useCreateClientCharge,
   usePayClientCharge,
   useWaiveClientCharge,
   useDeleteClientCharge,
 } from "../hooks/useClientCharges";
+import { useCharges } from "@/features/charges/hooks/useCharges";
 import type { ClientCharge } from "../api/charges";
 import { formatClientDate } from "../utils/client";
 
@@ -44,8 +44,11 @@ interface ClientChargesProps {
 const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
   const { t } = useTranslation();
   const { data: chargesData, isLoading } = useClientCharges(clientId);
-  const { data: template } = useClientChargesTemplate(clientId);
+  const { data: globalCharges } = useCharges();
   const createMutation = useCreateClientCharge();
+
+  const clientChargeOptions = (globalCharges ?? []).filter((c) => c.chargeAppliesTo?.id === 1 && c.active);
+
   const payMutation = usePayClientCharge();
   const waiveMutation = useWaiveClientCharge();
   const deleteMutation = useDeleteClientCharge();
@@ -67,9 +70,9 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
   });
 
   const openCreate = useCallback(() => {
-    reset({ chargeId: undefined as any, amount: undefined as any, dueDate: "" });
+    reset({ chargeId: undefined as unknown as number, amount: undefined as unknown as number, dueDate: "" });
     setDialogOpen(true);
-  }, [reset]);
+  }, [reset, setDialogOpen]);
 
   const onSubmit = useCallback(
     async (values: ChargeFormValues) => {
@@ -79,36 +82,41 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
         dateFormat: "yyyy-MM-dd",
         locale: "en",
       };
-      if (values.dueDate) (payload as any).dueDate = values.dueDate;
-      await createMutation.mutateAsync({ clientId, payload: payload as any });
+      if (values.dueDate) (payload as Record<string, unknown>).dueDate = values.dueDate;
+      await createMutation.mutateAsync({ clientId, payload: payload as Record<string, unknown> });
       setDialogOpen(false);
     },
-    [clientId, createMutation],
+    [clientId, createMutation, setDialogOpen],
   );
 
   const handlePay = useCallback(async () => {
     if (!payId) return;
     await payMutation.mutateAsync({ clientId, chargeId: payId });
     setPayId(null);
-  }, [clientId, payId, payMutation]);
+  }, [clientId, payId, payMutation, setPayId]);
 
   const handleWaive = useCallback(async () => {
     if (!waiveId) return;
     await waiveMutation.mutateAsync({ clientId, chargeId: waiveId });
     setWaiveId(null);
-  }, [clientId, waiveId, waiveMutation]);
+  }, [clientId, waiveId, waiveMutation, setWaiveId]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteId) return;
     await deleteMutation.mutateAsync({ clientId, chargeId: deleteId });
     setDeleteId(null);
-  }, [clientId, deleteId, deleteMutation]);
+  }, [clientId, deleteId, deleteMutation, setDeleteId]);
 
   const columns: ColumnDef<ClientCharge>[] = [
     {
       key: "name",
       header: t("clients.charges.charge"),
       accessorFn: (row) => <span className="text-sm font-medium">{row.name ?? `#${row.chargeId}`}</span>,
+    },
+    {
+      key: "chargeTimeType",
+      header: t("clients.charges.chargeType"),
+      accessorFn: (row) => <span className="text-sm">{row.chargeTimeType?.value ?? "—"}</span>,
     },
     {
       key: "amount",
@@ -215,7 +223,7 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
           <Receipt className="h-5 w-5" />
           {t("clients.charges.title")}
         </h3>
-        <Button onClick={openCreate} size="sm">
+        <Button onClick={openCreate} size="sm" disabled={clientChargeOptions.length === 0}>
           <Plus className="mr-1 h-4 w-4" />
           {t("clients.charges.applyCharge")}
         </Button>
@@ -227,7 +235,10 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
             data={charges}
             loading={isLoading}
             minWidth={800}
-            emptyState={{ icon: <Receipt className="h-8 w-8 text-gray-300" />, message: t("clients.charges.noCharges") }}
+            emptyState={{
+              icon: <Receipt className="h-8 w-8 text-gray-300" />,
+              message: t("clients.charges.noCharges"),
+            }}
           />
         </CardContent>
       </Card>
@@ -246,9 +257,9 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
                   <SelectValue placeholder={t("clients.charges.selectCharge")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {template?.chargeOptions?.map((o) => (
-                    <SelectItem key={o.id} value={String(o.id)}>
-                      {o.name} ({formatCurrency(o.amount)})
+                  {clientChargeOptions.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name} ({formatCurrency(c.amount)})
                     </SelectItem>
                   ))}
                 </SelectContent>

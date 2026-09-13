@@ -96,3 +96,6 @@ export type {
 
 export { fetchClientImage, uploadClientImage, deleteClientImage, uploadClientTemplate } from "./images";
 export type { ClientImageParams, ClientImageCreateResponse, ClientUploadTemplateResponse } from "./images";
+
+export { fetchClientObligeeDetails } from "./obligee";
+export type { ClientObligeeDetails, ClientObligeeDetailsResponse } from "./obligee";

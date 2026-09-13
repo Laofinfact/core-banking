@@ -2,13 +2,12 @@ import { type FC, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -59,7 +58,7 @@ const ClientIdentifiers: FC<ClientIdentifiersProps> = ({ clientId }) => {
 
   const openCreate = useCallback(() => {
     setEditingId(null);
-    reset({ documentTypeId: undefined as any, documentKey: "", description: "" });
+    reset({ documentTypeId: undefined as unknown as number, documentKey: "", description: "" });
     setDialogOpen(true);
   }, [reset]);
 

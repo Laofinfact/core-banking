@@ -453,22 +453,29 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="flex flex-col gap-1.5">
               <label className="block text-sm font-medium">{t("Constitution")}</label>
-              <Select
-                disabled={isSubmitting}
-                onValueChange={(v) => setValue("clientNonPersonDetails.constitutionId", v === "" ? undefined : Number(v))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("Select constitution")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">{t("None")}</SelectItem>
-                  {template?.clientNonPersonConstitutionOptions?.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="clientNonPersonDetails.constitutionId"
+                render={({ field }) => (
+                  <Select
+                    disabled={isSubmitting}
+                    value={field.value ? String(field.value) : ""}
+                    onValueChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("Select constitution")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">{t("None")}</SelectItem>
+                      {template?.clientNonPersonConstitutionOptions?.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Incorporation Number")}</label>
@@ -476,22 +483,29 @@ const ClientForm: FC<ClientFormProps> = ({ template, client, onSubmit, isSubmitt
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="block text-sm font-medium">{t("Main Business Line")}</label>
-              <Select
-                disabled={isSubmitting}
-                onValueChange={(v) => setValue("clientNonPersonDetails.mainBusinessLineId", v === "" ? undefined : Number(v))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("Select business line")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">{t("None")}</SelectItem>
-                  {template?.clientNonPersonMainBusinessLineOptions?.map((b) => (
-                    <SelectItem key={b.id} value={String(b.id)}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="clientNonPersonDetails.mainBusinessLineId"
+                render={({ field }) => (
+                  <Select
+                    disabled={isSubmitting}
+                    value={field.value ? String(field.value) : ""}
+                    onValueChange={(v) => field.onChange(v === "" ? undefined : Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("Select business line")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">{t("None")}</SelectItem>
+                      {template?.clientNonPersonMainBusinessLineOptions?.map((b) => (
+                        <SelectItem key={b.id} value={String(b.id)}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5 lg:col-span-2">
               <label className="block text-sm font-medium">{t("Remarks")}</label>

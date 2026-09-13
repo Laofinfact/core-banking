@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { User, Phone, Mail, Calendar, Clock, Hash, Building2 } from "lucide-react";
+import { User, Phone, Mail, Calendar, Clock, Hash, Building2, ArrowLeftRight, Tag, CircleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Client } from "../types/client";
 import ClientStatusBadge from "./ClientStatusBadge";
@@ -42,6 +42,8 @@ const ClientDetails: FC<ClientDetailsProps> = ({ client }) => {
           <InfoRow icon={<Hash className="h-4 w-4" />} label={t("Status")} value={<ClientStatusBadge status={status} />} />
           <InfoRow icon={<Building2 className="h-4 w-4" />} label={t("Office")} value={client.officeName ?? "—"} />
           <InfoRow icon={<User className="h-4 w-4" />} label={t("Staff")} value={client.staffName ?? "—"} />
+          <InfoRow icon={<Tag className="h-4 w-4" />} label={t("Client Type")} value={client.clientType?.value ?? "—"} />
+          <InfoRow icon={<Tag className="h-4 w-4" />} label={t("Client Classification")} value={client.clientClassification?.value ?? "—"} />
         </CardContent>
       </Card>
 
@@ -67,6 +69,7 @@ const ClientDetails: FC<ClientDetailsProps> = ({ client }) => {
                 : "—"
             }
           />
+          <InfoRow icon={<Building2 className="h-4 w-4" />} label={t("Office Joining Date")} value={formatClientDate(client.officeJoiningDate)} />
         </CardContent>
       </Card>
 
@@ -108,6 +111,86 @@ const ClientDetails: FC<ClientDetailsProps> = ({ client }) => {
           />
         </CardContent>
       </Card>
+
+      {/* Transfer Details */}
+      {(client.proposedTransferDate || client.transferToOfficeName) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowLeftRight className="h-4 w-4 text-gray-400" />
+              {t("Transfer Details")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
+            <InfoRow
+              icon={<Building2 className="h-4 w-4" />}
+              label={t("Transfer To Office")}
+              value={client.transferToOfficeName ?? "—"}
+            />
+            <InfoRow
+              icon={<Calendar className="h-4 w-4" />}
+              label={t("Proposed Transfer Date")}
+              value={formatClientDate(client.proposedTransferDate)}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Closure / Rejection / Withdrawal Details */}
+      {(client.closureDate || client.rejectionDate || client.withdrawalDate) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CircleAlert className="h-4 w-4 text-gray-400" />
+              {t("Termination Details")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
+            {client.closureDate && (
+              <>
+                <InfoRow
+                  icon={<Calendar className="h-4 w-4" />}
+                  label={t("Closure Date")}
+                  value={formatClientDate(client.closureDate)}
+                />
+                <InfoRow
+                  icon={<CircleAlert className="h-4 w-4" />}
+                  label={t("Closure Reason")}
+                  value={client.closureReason?.value ?? "—"}
+                />
+              </>
+            )}
+            {client.rejectionDate && (
+              <>
+                <InfoRow
+                  icon={<Calendar className="h-4 w-4" />}
+                  label={t("Rejection Date")}
+                  value={formatClientDate(client.rejectionDate)}
+                />
+                <InfoRow
+                  icon={<CircleAlert className="h-4 w-4" />}
+                  label={t("Rejection Reason")}
+                  value={client.rejectionReason?.value ?? "—"}
+                />
+              </>
+            )}
+            {client.withdrawalDate && (
+              <>
+                <InfoRow
+                  icon={<Calendar className="h-4 w-4" />}
+                  label={t("Withdrawal Date")}
+                  value={formatClientDate(client.withdrawalDate)}
+                />
+                <InfoRow
+                  icon={<CircleAlert className="h-4 w-4" />}
+                  label={t("Withdrawal Reason")}
+                  value={client.withdrawalReason?.value ?? "—"}
+                />
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

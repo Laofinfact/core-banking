@@ -8,7 +8,6 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
@@ -67,8 +66,8 @@ const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
     reset({
       firstName: "",
       lastName: "",
-      relationshipId: undefined as any,
-      genderId: undefined as any,
+      relationshipId: undefined as unknown as number,
+      genderId: undefined as unknown as number,
       dateOfBirth: "",
       mobileNumber: "",
       isDependent: false,
@@ -106,7 +105,7 @@ const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
       if (editingId) {
         await updateMutation.mutateAsync({ clientId, familyMemberId: editingId, payload });
       } else {
-        await createMutation.mutateAsync({ clientId, payload: payload as any });
+        await createMutation.mutateAsync({ clientId, payload: payload as Record<string, unknown> });
       }
       setDialogOpen(false);
     },

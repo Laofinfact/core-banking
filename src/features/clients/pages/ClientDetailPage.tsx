@@ -20,6 +20,7 @@ import {
   Calendar,
   CalendarClock,
   ShieldCheck,
+  UsersRound,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -47,6 +48,7 @@ import ClientNotes from "../components/ClientNotes";
 import ClientCollaterals from "../components/ClientCollaterals";
 import ClientTransactions from "../components/ClientTransactions";
 import ClientImage from "../components/ClientImage";
+import ClientObligeeDetails from "../components/ClientObligeeDetails";
 import { getClientStatus, getClientDisplayName } from "../utils/client";
 import type { ClientLoanAccount, ClientSavingsAccount } from "../api/client";
 import { useTranslation } from "react-i18next";
@@ -60,7 +62,20 @@ const ClientDetailPage: FC = () => {
   const navigate = useNavigate();
   const { data: client, isLoading, isError, refetch } = useClient(id);
   const { data: template } = useClientTemplate();
+  const { data: closeTemplate } = useClientTemplate("close");
+  const { data: rejectTemplate } = useClientTemplate("reject");
+  const { data: withdrawTemplate } = useClientTemplate("withdraw");
   const { data: accounts, isLoading: accountsLoading } = useClientAccounts(id);
+
+  // Merge command-specific reason options into the main template
+  const mergedTemplate = template
+    ? {
+        ...template,
+        closureReasons: closeTemplate?.closureReasons ?? template.closureReasons,
+        rejectionReasons: rejectTemplate?.rejectionReasons ?? template.rejectionReasons,
+        withdrawalReasons: withdrawTemplate?.withdrawalReasons ?? template.withdrawalReasons,
+      }
+    : template;
   const activateMutation = useActivateClient();
   const deleteMutation = useDeleteClient();
   const [showActivateConfirm, setShowActivateConfirm] = useState(false);
@@ -139,7 +154,7 @@ const ClientDetailPage: FC = () => {
                   clientId={client.id}
                   status={status}
                   displayName={displayName}
-                  template={template}
+                  template={mergedTemplate}
                   currentStaffId={client.staffId}
                   onSuccess={() => refetch()}
                 />
@@ -228,6 +243,10 @@ const ClientDetailPage: FC = () => {
           <TabsTrigger value="transactions" className="gap-1.5">
             <ArrowLeftRight className="h-4 w-4" />
             {t("Transactions")}
+          </TabsTrigger>
+          <TabsTrigger value="obligee" className="gap-1.5">
+            <UsersRound className="h-4 w-4" />
+            {t("Obligee Details")}
           </TabsTrigger>
         </TabsList>
         <Separator className="mb-6" />
@@ -410,6 +429,10 @@ const ClientDetailPage: FC = () => {
 
         <TabsContent value="transactions" className="mt-0">
           <ClientTransactions clientId={client.id} />
+        </TabsContent>
+
+        <TabsContent value="obligee" className="mt-0">
+          <ClientObligeeDetails clientId={client.id} />
         </TabsContent>
       </Tabs>
 

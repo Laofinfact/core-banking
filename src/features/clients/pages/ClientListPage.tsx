@@ -44,7 +44,7 @@ const ClientListPage: FC = () => {
       setSearchParams(params, { replace: true });
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, searchParams, setSearchParams]);
 
   // Build query params
   const queryParams = useMemo(() => {
@@ -60,7 +60,7 @@ const ClientListPage: FC = () => {
     if (status !== "all") params.status = Number(status);
     if (legalForm !== "all") params.legalForm = Number(legalForm);
     return params;
-  }, [page, search, officeId, staffId, status, sortBy, sortOrder]);
+  }, [page, search, officeId, staffId, status, sortBy, sortOrder, legalForm]);
 
   const { data, isLoading, isError, refetch, isRefetching } = useClients(queryParams);
   const { data: template } = useClientTemplate();

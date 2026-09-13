@@ -202,6 +202,10 @@ export type {
 export { fetchClientImage, uploadClientImage, deleteClientImage, uploadClientTemplate } from "./api/images";
 export type { ClientImageParams, ClientImageCreateResponse, ClientUploadTemplateResponse } from "./api/images";
 
+// API — Client Obligee Details
+export { fetchClientObligeeDetails } from "./api/obligee";
+export type { ClientObligeeDetails, ClientObligeeDetailsResponse } from "./api/obligee";
+
 // Hooks
 export { useClients, useClientPages, clientKeys } from "./hooks/useClients";
 export { useClient } from "./hooks/useClient";
@@ -277,6 +281,7 @@ export {
   useUploadClientTemplate,
   clientImageKeys,
 } from "./hooks/useClientImages";
+export { useClientObligeeDetails, clientObligeeKeys } from "./hooks/useClientObligee";
 
 // Hooks — Client Commands
 export {
@@ -319,6 +324,7 @@ export { default as ClientTransactions } from "./components/ClientTransactions";
 export { default as ClientCommands } from "./components/ClientCommands";
 export { default as ClientImage } from "./components/ClientImage";
 export { default as ClientBulkImport } from "./components/ClientBulkImport";
+export { default as ClientObligeeDetails } from "./components/ClientObligeeDetails";
 
 // Pages
 export { default as ClientListPage } from "./pages/ClientListPage";

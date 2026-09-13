@@ -46,6 +46,8 @@ import {
   undoRejectionSchema,
   undoWithdrawalSchema,
   proposeTransferSchema,
+  acceptTransferSchema,
+  transferActionSchema,
   type RejectClientFormValues,
   type WithdrawClientFormValues,
   type CloseClientFormValues,
@@ -53,6 +55,8 @@ import {
   type UndoRejectClientFormValues,
   type UndoWithdrawClientFormValues,
   type ProposeTransferFormValues,
+  type AcceptTransferFormValues,
+  type TransferActionFormValues,
 } from "../schemas/client.schema";
 
 interface ClientCommandsProps {
@@ -118,6 +122,19 @@ const ClientCommands: FC<ClientCommandsProps> = ({
   const transferForm = useForm<ProposeTransferFormValues>({
     resolver: zodResolver(proposeTransferSchema),
     defaultValues: { destinationOfficeId: undefined as unknown as number, dateFormat: "yyyy-MM-dd", locale: "en" },
+  });
+
+  const acceptTransferForm = useForm<AcceptTransferFormValues>({
+    resolver: zodResolver(acceptTransferSchema),
+    defaultValues: { dateFormat: "yyyy-MM-dd", locale: "en" },
+  });
+  const rejectTransferForm = useForm<TransferActionFormValues>({
+    resolver: zodResolver(transferActionSchema),
+    defaultValues: { dateFormat: "yyyy-MM-dd", locale: "en" },
+  });
+  const withdrawTransferForm = useForm<TransferActionFormValues>({
+    resolver: zodResolver(transferActionSchema),
+    defaultValues: { dateFormat: "yyyy-MM-dd", locale: "en" },
   });
 
   const [staffDialogOpen, setStaffDialogOpen] = useState(false);
@@ -212,19 +229,52 @@ const ClientCommands: FC<ClientCommandsProps> = ({
   }, [clientId, proposeTransferMutation, transferForm, onSuccess]);
 
   const handleAcceptTransfer = useCallback(async () => {
-    await acceptTransferMutation.mutateAsync({ clientId });
+    const values = acceptTransferForm.getValues();
+    await acceptTransferMutation.mutateAsync({
+      clientId,
+      payload: {
+        transferDate: values.transferDate,
+        dateFormat: values.dateFormat ?? "yyyy-MM-dd",
+        locale: values.locale ?? "en",
+        note: values.note,
+      },
+    });
+    setDialog(null);
+    acceptTransferForm.reset();
     onSuccess?.();
-  }, [clientId, acceptTransferMutation, onSuccess]);
+  }, [clientId, acceptTransferMutation, acceptTransferForm, onSuccess]);
 
   const handleRejectTransfer = useCallback(async () => {
-    await rejectTransferMutation.mutateAsync({ clientId });
+    const values = rejectTransferForm.getValues();
+    await rejectTransferMutation.mutateAsync({
+      clientId,
+      payload: {
+        transferDate: values.transferDate,
+        dateFormat: values.dateFormat ?? "yyyy-MM-dd",
+        locale: values.locale ?? "en",
+        note: values.note,
+      },
+    });
+    setDialog(null);
+    rejectTransferForm.reset();
     onSuccess?.();
-  }, [clientId, rejectTransferMutation, onSuccess]);
+  }, [clientId, rejectTransferMutation, rejectTransferForm, onSuccess]);
 
   const handleWithdrawTransfer = useCallback(async () => {
-    await withdrawTransferMutation.mutateAsync({ clientId });
+    const values = withdrawTransferForm.getValues();
+    await withdrawTransferMutation.mutateAsync({
+      clientId,
+      payload: {
+        transferDate: values.transferDate,
+        dateFormat: values.dateFormat ?? "yyyy-MM-dd",
+        locale: values.locale ?? "en",
+        note: values.note,
+      },
+    });
+    setDialog(null);
+    withdrawTransferForm.reset();
     onSuccess?.();
-  }, [clientId, withdrawTransferMutation, onSuccess]);
+  }, [clientId, withdrawTransferMutation, withdrawTransferForm, onSuccess]);
 
   const isPending = status === "pending";
   const isActive = status === "active";
@@ -341,7 +391,7 @@ const ClientCommands: FC<ClientCommandsProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleAcceptTransfer}
+              onClick={() => setDialog("acceptTransfer")}
               className="text-emerald-600"
               disabled={anyLoading}
             >
@@ -351,7 +401,7 @@ const ClientCommands: FC<ClientCommandsProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleRejectTransfer}
+              onClick={() => setDialog("rejectTransfer")}
               className="text-red-600"
               disabled={anyLoading}
             >
@@ -361,7 +411,7 @@ const ClientCommands: FC<ClientCommandsProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleWithdrawTransfer}
+              onClick={() => setDialog("withdrawTransfer")}
               className="text-amber-600"
               disabled={anyLoading}
             >
@@ -675,6 +725,90 @@ const ClientCommands: FC<ClientCommandsProps> = ({
             >
               {proposeTransferMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("clients.commands.proposeTransfer")}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Accept Transfer dialog */}
+      <Dialog open={dialog === "acceptTransfer"} onOpenChange={() => setDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("clients.commands.acceptTransfer")}</DialogTitle>
+            <DialogDescription>{t("clients.commands.acceptTransferDescription", { name: displayName })}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={acceptTransferForm.handleSubmit(handleAcceptTransfer)} className="space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-sm font-medium" htmlFor="acceptTransferDate">
+                {t("clients.commands.transferDate")}
+              </label>
+              <Input id="acceptTransferDate" type="date" {...acceptTransferForm.register("transferDate")} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-sm font-medium" htmlFor="acceptTransferNote">
+                {t("clients.commands.note")}
+              </label>
+              <Input id="acceptTransferNote" {...acceptTransferForm.register("note")} placeholder={t("clients.commands.optionalNote")} />
+            </div>
+            <Button type="submit" disabled={acceptTransferMutation.isPending}>
+              {acceptTransferMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("clients.commands.acceptTransfer")}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Transfer dialog */}
+      <Dialog open={dialog === "rejectTransfer"} onOpenChange={() => setDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("clients.commands.rejectTransfer")}</DialogTitle>
+            <DialogDescription>{t("clients.commands.rejectTransferDescription", { name: displayName })}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={rejectTransferForm.handleSubmit(handleRejectTransfer)} className="space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-sm font-medium" htmlFor="rejectTransferDate">
+                {t("clients.commands.transferDate")}
+              </label>
+              <Input id="rejectTransferDate" type="date" {...rejectTransferForm.register("transferDate")} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-sm font-medium" htmlFor="rejectTransferNote">
+                {t("clients.commands.note")}
+              </label>
+              <Input id="rejectTransferNote" {...rejectTransferForm.register("note")} placeholder={t("clients.commands.optionalNote")} />
+            </div>
+            <Button type="submit" disabled={rejectTransferMutation.isPending} variant="destructive">
+              {rejectTransferMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("clients.commands.rejectTransfer")}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdraw Transfer dialog */}
+      <Dialog open={dialog === "withdrawTransfer"} onOpenChange={() => setDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("clients.commands.withdrawTransfer")}</DialogTitle>
+            <DialogDescription>{t("clients.commands.withdrawTransferDescription", { name: displayName })}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={withdrawTransferForm.handleSubmit(handleWithdrawTransfer)} className="space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-sm font-medium" htmlFor="withdrawTransferDate">
+                {t("clients.commands.transferDate")}
+              </label>
+              <Input id="withdrawTransferDate" type="date" {...withdrawTransferForm.register("transferDate")} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="block text-sm font-medium" htmlFor="withdrawTransferNote">
+                {t("clients.commands.note")}
+              </label>
+              <Input id="withdrawTransferNote" {...withdrawTransferForm.register("note")} placeholder={t("clients.commands.optionalNote")} />
+            </div>
+            <Button type="submit" disabled={withdrawTransferMutation.isPending} variant="destructive">
+              {withdrawTransferMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("clients.commands.withdrawTransfer")}
             </Button>
           </form>
         </DialogContent>
