@@ -1,4 +1,4 @@
-import { type FC, useState, useRef, useEffect } from "react";
+import { type FC } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Bell, Menu, Moon, Sun, User, LogOut, ChevronDown, Settings } from "lucide-react";
@@ -75,22 +75,7 @@ const TopNav: FC = () => {
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
   const navigate = useNavigate();
-  const [searchValue, setSearchValue] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const breadcrumbs = useBreadcrumbs();
-
-  // Keyboard shortcut: Cmd/Ctrl+K to focus search
-  useEffect(() => {
-    function handleKeydown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    }
-    window.addEventListener("keydown", handleKeydown);
-    return () => window.removeEventListener("keydown", handleKeydown);
-  }, []);
 
   return (
     <header className="sticky top-0 z-30 min-w-0 border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
