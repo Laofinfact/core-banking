@@ -12,7 +12,7 @@ import {
   Shield,
   Clock,
   ChartArea,
-  RefreshCw,
+  BookOpen,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -28,15 +28,18 @@ function enumVal(v: any, fallback = ""): string {
 }
 
 const COMPOUNDING_LABELS: Record<number, string> = {
-  1: "Daily",
-  4: "Monthly",
-  5: "Quarterly",
-  6: "Semi-Annual",
-  7: "Annual",
+  1: "Daily", 4: "Monthly", 5: "Quarterly", 6: "Semi-Annual", 7: "Annual",
 };
-const POSTING_LABELS: Record<number, string> = { 1: "Monthly", 4: "Quarterly", 5: "Semi-Annual", 7: "Annual" };
+const POSTING_LABELS: Record<number, string> = {
+  1: "Daily", 4: "Monthly", 5: "Quarterly", 6: "Semi-Annual", 7: "Annual",
+  8: "Anniversary Monthly", 9: "Anniversary Quarterly", 10: "Anniversary Bi-Annual", 11: "Anniversary Annual",
+};
 const CALCULATION_LABELS: Record<number, string> = { 1: "Daily Balance", 2: "Average Daily Balance" };
 const DAYS_IN_YEAR_LABELS: Record<number, string> = { 360: "360 Days", 364: "364 Days", 365: "365 Days", 1: "Actual" };
+const PERIOD_TYPE_LABELS: Record<number, string> = { 0: "Days", 1: "Weeks", 2: "Months", 3: "Years" };
+const ACCOUNTING_RULE_LABELS: Record<number, string> = {
+  1: "None", 2: "Cash Based", 3: "Accrual (Periodic)", 4: "Accrual (Upfront)",
+};
 
 const InfoRow: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode }> = ({
   icon,
@@ -117,7 +120,10 @@ const RecurringDepositProductDetailPage: React.FC = () => {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const p = product as any;
+  const mappings = p.accountingMappings ?? {};
+  const accountingRuleId = p.accountingRule ?? 1;
 
   return (
     <div className="p-6 max-w-5xl m-auto space-y-6">
@@ -151,16 +157,8 @@ const RecurringDepositProductDetailPage: React.FC = () => {
             <InfoRow icon={<FileText className="h-4 w-4" />} label={t("Product Name")} value={p.name} />
             <InfoRow icon={<FileText className="h-4 w-4" />} label={t("Short Name")} value={p.shortName ?? "—"} />
             <InfoRow icon={<FileText className="h-4 w-4" />} label={t("Description")} value={p.description ?? "—"} />
-            <InfoRow
-              icon={<DollarSign className="h-4 w-4" />}
-              label={t("Currency")}
-              value={p.currency?.displaySymbol ?? p.currency?.code ?? "—"}
-            />
-            <InfoRow
-              icon={<DollarSign className="h-4 w-4" />}
-              label={t("Deposit Amount")}
-              value={p.depositAmount?.toLocaleString() ?? "—"}
-            />
+            <InfoRow icon={<DollarSign className="h-4 w-4" />} label={t("Currency")} value={`${p.currency?.code ?? "—"} (${p.currency?.displaySymbol ?? ""})`} />
+            <InfoRow icon={<Percent className="h-4 w-4 text-emerald-500" />} label={t("Nominal Annual Rate")} value={`${p.nominalAnnualInterestRate}%`} />
           </CardContent>
         </Card>
 
@@ -172,31 +170,25 @@ const RecurringDepositProductDetailPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
-            <InfoRow
-              icon={<Repeat className="h-4 w-4" />}
-              label={t("Compounding Period")}
-              value={
-                COMPOUNDING_LABELS[p.interestCompoundingPeriodType?.id] ?? enumVal(p.interestCompoundingPeriodType, "—")
-              }
-            />
-            <InfoRow
-              icon={<CalendarClock className="h-4 w-4" />}
-              label={t("Posting Period")}
-              value={POSTING_LABELS[p.interestPostingPeriodType?.id] ?? enumVal(p.interestPostingPeriodType, "—")}
-            />
-            <InfoRow
-              icon={<CalendarClock className="h-4 w-4" />}
-              label={t("Calculation Method")}
-              value={CALCULATION_LABELS[p.interestCalculationType?.id] ?? enumVal(p.interestCalculationType, "—")}
-            />
-            <InfoRow
-              icon={<CalendarClock className="h-4 w-4" />}
-              label={t("Days in Year")}
-              value={
-                DAYS_IN_YEAR_LABELS[p.interestCalculationDaysInYearType?.id] ??
-                enumVal(p.interestCalculationDaysInYearType, "—")
-              }
-            />
+            <InfoRow icon={<Repeat className="h-4 w-4" />} label={t("Compounding Period")} value={COMPOUNDING_LABELS[p.interestCompoundingPeriodType?.id ?? p.interestCompoundingPeriodType] ?? enumVal(p.interestCompoundingPeriodType, "—")} />
+            <InfoRow icon={<CalendarClock className="h-4 w-4" />} label={t("Posting Period")} value={POSTING_LABELS[p.interestPostingPeriodType?.id ?? p.interestPostingPeriodType] ?? enumVal(p.interestPostingPeriodType, "—")} />
+            <InfoRow icon={<CalendarClock className="h-4 w-4" />} label={t("Calculation Method")} value={CALCULATION_LABELS[p.interestCalculationType?.id ?? p.interestCalculationType] ?? enumVal(p.interestCalculationType, "—")} />
+            <InfoRow icon={<CalendarClock className="h-4 w-4" />} label={t("Days in Year")} value={DAYS_IN_YEAR_LABELS[p.interestCalculationDaysInYearType?.id ?? p.interestCalculationDaysInYearType] ?? enumVal(p.interestCalculationDaysInYearType, "—")} />
+            <InfoRow icon={<DollarSign className="h-4 w-4" />} label={t("Min Balance for Interest Calc")} value={p.minBalanceForInterestCalculation?.toLocaleString() ?? "—"} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <DollarSign className="h-5 w-5 text-[#D32F2F]" />
+              {t("Deposit Amount")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
+            <InfoRow icon={<DollarSign className="h-4 w-4" />} label={t("Default Deposit Amount")} value={p.depositAmount?.toLocaleString() ?? "—"} />
+            <InfoRow icon={<DollarSign className="h-4 w-4" />} label={t("Min Deposit Amount")} value={p.minDepositAmount?.toLocaleString() ?? "—"} />
+            <InfoRow icon={<DollarSign className="h-4 w-4" />} label={t("Max Deposit Amount")} value={p.maxDepositAmount?.toLocaleString() ?? "—"} />
           </CardContent>
         </Card>
 
@@ -208,41 +200,24 @@ const RecurringDepositProductDetailPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
-            <InfoRow
-              icon={<Clock className="h-4 w-4" />}
-              label={t("Min Deposit Term")}
-              value={`${p.minDepositTerm} ${p.minDepositTermType?.description ?? ""}`}
-            />
-            <InfoRow
-              icon={<Clock className="h-4 w-4" />}
-              label={t("Max Deposit Term")}
-              value={p.maxDepositTerm != null ? `${p.maxDepositTerm} ${p.maxDepositTermType?.description ?? ""}` : "—"}
-            />
+            <InfoRow icon={<Clock className="h-4 w-4" />} label={t("Min Deposit Term")} value={`${p.minDepositTerm} ${PERIOD_TYPE_LABELS[p.minDepositTermType?.id] ?? ""}`} />
+            <InfoRow icon={<Clock className="h-4 w-4" />} label={t("Max Deposit Term")} value={p.maxDepositTerm != null ? `${p.maxDepositTerm} ${PERIOD_TYPE_LABELS[p.maxDepositTermType?.id] ?? ""}` : "—"} />
+            <InfoRow icon={<Clock className="h-4 w-4" />} label={t("In Multiples Of Term")} value={p.inMultiplesOfDepositTerm ? `${p.inMultiplesOfDepositTerm} ${PERIOD_TYPE_LABELS[p.inMultiplesOfDepositTermType?.id] ?? ""}` : "—"} />
+            <InfoRow icon={<Clock className="h-4 w-4" />} label={t("Lock-in Period")} value={p.lockinPeriodFrequency != null ? `${p.lockinPeriodFrequency} ${PERIOD_TYPE_LABELS[p.lockinPeriodFrequencyType?.id] ?? ""}` : t("None")} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <RefreshCw className="h-5 w-5 text-[#D32F2F]" />
+              <Shield className="h-5 w-5 text-[#D32F2F]" />
               {t("Recurring Settings")}
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
-            <InfoRow
-              icon={<DollarSign className="h-4 w-4" />}
-              label={t("Recurring Deposit Amount")}
-              value={p.depositAmount?.toLocaleString() ?? "—"}
-            />
-            <InfoRow
-              icon={<RefreshCw className="h-4 w-4" />}
-              label={t("Recurring Frequency")}
-              value={(() => {
-                const freq = p.recurringFrequency ?? p.recurringDepositFrequency;
-                const type = p.recurringFrequencyType?.description ?? p.recurringDepositFrequencyType?.description;
-                return freq != null ? `${t("Every")} ${freq} ${type ?? ""}` : "—";
-              })()}
-            />
+            <InfoRow icon={<Shield className="h-4 w-4" />} label={t("Mandatory Deposit")} value={p.isMandatoryDeposit ? t("Yes") : t("No")} />
+            <InfoRow icon={<Shield className="h-4 w-4" />} label={t("Allow Withdrawal")} value={p.allowWithdrawal ? t("Yes") : t("No")} />
+            <InfoRow icon={<Shield className="h-4 w-4" />} label={t("Adjust Advance Towards Future Payments")} value={p.adjustAdvanceTowardsFuturePayments ? t("Yes") : t("No")} />
           </CardContent>
         </Card>
 
@@ -254,23 +229,11 @@ const RecurringDepositProductDetailPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
-            <InfoRow
-              icon={<Shield className="h-4 w-4" />}
-              label={t("Penal Applicable")}
-              value={p.preClosurePenalApplicable ? t("Yes") : t("No")}
-            />
+            <InfoRow icon={<Shield className="h-4 w-4" />} label={t("Penal Applicable")} value={p.preClosurePenalApplicable ? t("Yes") : t("No")} />
             {p.preClosurePenalApplicable && (
               <>
-                <InfoRow
-                  icon={<Percent className="h-4 w-4" />}
-                  label={t("Penal Interest (%)")}
-                  value={p.preClosurePenalInterest != null ? `${p.preClosurePenalInterest}%` : "—"}
-                />
-                <InfoRow
-                  icon={<FileText className="h-4 w-4" />}
-                  label={t("Penal Interest On")}
-                  value={p.preClosurePenalInterestOnType?.description ?? "—"}
-                />
+                <InfoRow icon={<Percent className="h-4 w-4" />} label={t("Penal Interest (%)")} value={p.preClosurePenalInterest != null ? `${p.preClosurePenalInterest}%` : "—"} />
+                <InfoRow icon={<FileText className="h-4 w-4" />} label={t("Penal Interest On")} value={enumVal(p.preClosurePenalInterestOnType, "—")} />
               </>
             )}
           </CardContent>
@@ -280,22 +243,43 @@ const RecurringDepositProductDetailPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-5 w-5 text-[#D32F2F]" />
-              {t("Tax & Accounting")}
+              {t("Tax")}
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
-            <InfoRow
-              icon={<FileText className="h-4 w-4" />}
-              label={t("Withhold Tax")}
-              value={p.withHoldTax ? t("Yes") : t("No")}
-            />
-            <InfoRow
-              icon={<FileText className="h-4 w-4" />}
-              label={t("Accounting Rule")}
-              value={p.accountingRule?.description ?? "—"}
-            />
+            <InfoRow icon={<FileText className="h-4 w-4" />} label={t("Withhold Tax")} value={p.withHoldTax ? t("Yes") : t("No")} />
+            {p.withHoldTax && (
+              <InfoRow icon={<FileText className="h-4 w-4" />} label={t("Tax Group")} value={p.taxGroup?.name ?? (p.taxGroupId ? `#${p.taxGroupId}` : "—")} />
+            )}
           </CardContent>
         </Card>
+
+        {(accountingRuleId === 2 || accountingRuleId === 3 || accountingRuleId === 4) && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BookOpen className="h-5 w-5 text-[#D32F2F]" />
+                {t("Accounting Mappings")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
+              <InfoRow icon={<BookOpen className="h-4 w-4" />} label={t("Accounting Rule")} value={ACCOUNTING_RULE_LABELS[accountingRuleId] ?? String(accountingRuleId)} />
+              <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Savings Reference Account")} value={mappings.savingsReferenceAccount ? `${mappings.savingsReferenceAccount.name} (${mappings.savingsReferenceAccount.glCode ?? "—"})` : "—"} />
+              <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Savings Control Account")} value={mappings.savingsControlAccount ? `${mappings.savingsControlAccount.name} (${mappings.savingsControlAccount.glCode ?? "—"})` : "—"} />
+              <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Interest on Savings Account")} value={mappings.interestOnSavingsAccount ? `${mappings.interestOnSavingsAccount.name} (${mappings.interestOnSavingsAccount.glCode ?? "—"})` : "—"} />
+              <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Income from Fees Account")} value={mappings.incomeFromFeeAccount ? `${mappings.incomeFromFeeAccount.name} (${mappings.incomeFromFeeAccount.glCode ?? "—"})` : "—"} />
+              <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Income from Penalties Account")} value={mappings.incomeFromPenaltyAccount ? `${mappings.incomeFromPenaltyAccount.name} (${mappings.incomeFromPenaltyAccount.glCode ?? "—"})` : "—"} />
+              <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Transfers in Suspense Account")} value={mappings.transfersInSuspenseAccount ? `${mappings.transfersInSuspenseAccount.name} (${mappings.transfersInSuspenseAccount.glCode ?? "—"})` : "—"} />
+              {accountingRuleId === 3 && (
+                <>
+                  <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Fees Receivable Account")} value={mappings.feesReceivableAccount ? `${mappings.feesReceivableAccount.name} (${mappings.feesReceivableAccount.glCode ?? "—"})` : "—"} />
+                  <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Penalties Receivable Account")} value={mappings.penaltiesReceivableAccount ? `${mappings.penaltiesReceivableAccount.name} (${mappings.penaltiesReceivableAccount.glCode ?? "—"})` : "—"} />
+                  <InfoRow icon={<Landmark className="h-4 w-4" />} label={t("Interest Payable Account")} value={mappings.interestPayableAccount ? `${mappings.interestPayableAccount.name} (${mappings.interestPayableAccount.glCode ?? "—"})` : "—"} />
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {p.activeChart && (
@@ -326,7 +310,7 @@ const RecurringDepositProductDetailPage: React.FC = () => {
                   {p.activeChart.chartSlabs?.map((slab: any, i: number) => (
                     <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                       <td className="px-4 py-3">{slab.description}</td>
-                      <td className="px-4 py-3">{slab.periodType?.description ?? slab.periodType}</td>
+                      <td className="px-4 py-3">{enumVal(slab.periodType)}</td>
                       <td className="px-4 py-3 text-right font-mono">{slab.fromPeriod}</td>
                       <td className="px-4 py-3 text-right font-mono">{slab.toPeriod}</td>
                       <td className="px-4 py-3 text-right font-mono font-semibold">{slab.annualInterestRate}%</td>

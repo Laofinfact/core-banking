@@ -14,7 +14,57 @@ export type SavingsAccountStatus =
 
 export type DepositAccountType = "savings" | "fixed_deposit" | "recurring_deposit";
 
+export type AccountingRuleType = 1 | 2 | 3 | 4;
+
 // ─── Savings Product ─────────────────────────────────────────────
+
+export interface GLAccountMapping {
+  id: number;
+  name: string;
+  glCode?: string;
+}
+
+export interface SavingsProductAccountingMappings {
+  savingsReferenceAccount?: GLAccountMapping;
+  savingsControlAccount?: GLAccountMapping;
+  transfersInSuspenseAccount?: GLAccountMapping;
+  interestOnSavingsAccount?: GLAccountMapping;
+  incomeFromFeeAccount?: GLAccountMapping;
+  incomeFromPenaltyAccount?: GLAccountMapping;
+  overdraftPortfolioControl?: GLAccountMapping;
+  incomeFromInterest?: GLAccountMapping;
+  lossesWrittenOff?: GLAccountMapping;
+  feesReceivableAccount?: GLAccountMapping;
+  penaltiesReceivableAccount?: GLAccountMapping;
+  interestPayableAccount?: GLAccountMapping;
+  escheatLiabilityAccount?: GLAccountMapping;
+}
+
+export interface TaxGroup {
+  id: number;
+  name: string;
+}
+
+export interface PaymentChannelToFundSourceMapping {
+  paymentType?: { id: number; name: string };
+  fundSourceAccount?: GLAccountMapping;
+}
+
+export interface FeeToIncomeAccountMapping {
+  charge?: { id: number; name: string };
+  incomeAccount?: GLAccountMapping;
+}
+
+export interface PenaltyToIncomeAccountMapping {
+  charge?: { id: number; name: string };
+  incomeAccount?: GLAccountMapping;
+}
+
+export interface EnumOptionData {
+  id: number;
+  code: string;
+  value: string;
+}
 
 export interface SavingsProduct {
   id: number;
@@ -31,10 +81,10 @@ export interface SavingsProduct {
   nominalAnnualInterestRate: number;
   minRequiredOpeningBalance: number;
   lockinPeriodFrequency?: number;
-  lockinPeriodFrequencyType?: { id: number; code: string; value: string };
+  lockinPeriodFrequencyType?: EnumOptionData;
   withdrawalFeeForTransfers?: boolean;
   withdrawalFeeAmount?: number;
-  withdrawalFeeType?: { id: number; code: string; value: string };
+  withdrawalFeeType?: EnumOptionData;
   feeAmount?: number;
   feeOnMonthDay?: string;
   allowOverdraft?: boolean;
@@ -46,27 +96,32 @@ export interface SavingsProduct {
   enforceMinRequiredBalance?: boolean;
   lienAllowed?: boolean;
   maxAllowedLienLimit?: number;
-  accountingType?: number;
-  interestCompoundingPeriodType?: { id: number; code: string; value: string };
-  interestPostingPeriodType?: { id: number; code: string; value: string };
-  interestCalculationType?: { id: number; code: string; value: string };
-  interestCalculationDaysInYearType?: { id: number; code: string; value: string };
+  accountingRule?: AccountingRuleType;
+  interestCompoundingPeriodType?: EnumOptionData;
+  interestPostingPeriodType?: EnumOptionData;
+  interestCalculationType?: EnumOptionData;
+  interestCalculationDaysInYearType?: EnumOptionData;
   isDormancyTrackingActive?: boolean;
   daysToInactive?: number;
   daysToDormancy?: number;
   daysToEscheat?: number;
   withHoldTax?: boolean;
+  taxGroup?: TaxGroup | null;
   taxGroupId?: number;
   charges: Array<{
     id: number;
     chargeId: number;
     name: string;
     amount: number;
-    chargeTimeType: { id: number; code: string; value: string };
-    chargeCalculationType: { id: number; code: string; value: string };
+    chargeTimeType: EnumOptionData;
+    chargeCalculationType: EnumOptionData;
     isPenalty: boolean;
     isActive: boolean;
   }>;
+  accountingMappings?: SavingsProductAccountingMappings;
+  paymentChannelToFundSourceMappings?: PaymentChannelToFundSourceMapping[];
+  feeToIncomeAccountMappings?: FeeToIncomeAccountMapping[];
+  penaltyToIncomeAccountMappings?: PenaltyToIncomeAccountMapping[];
 }
 
 // ─── Savings Account ─────────────────────────────────────────────
@@ -494,43 +549,64 @@ export interface RecurringDepositProduct {
   shortName?: string;
   description?: string;
   currency: { code: string; name: string; decimalPlaces: number; displaySymbol: string; inMultiplesOf?: number };
+  nominalAnnualInterestRate: number;
+  interestCompoundingPeriodType: EnumOptionData;
+  interestPostingPeriodType: EnumOptionData;
+  interestCalculationType: EnumOptionData;
+  interestCalculationDaysInYearType: EnumOptionData;
+  minBalanceForInterestCalculation?: number;
+  lockinPeriodFrequency?: number;
+  lockinPeriodFrequencyType?: EnumOptionData;
+  // DepositProductTermAndPreClosure fields
+  preClosurePenalApplicable: boolean;
+  preClosurePenalInterest?: number;
+  preClosurePenalInterestOnType?: EnumOptionData;
+  // DepositTermDetail fields
+  minDepositTerm: number;
+  maxDepositTerm?: number;
+  minDepositTermType: EnumOptionData;
+  maxDepositTermType?: EnumOptionData;
+  inMultiplesOfDepositTerm?: number;
+  inMultiplesOfDepositTermType?: EnumOptionData;
+  // DepositProductAmountDetails fields
   minDepositAmount?: number;
   depositAmount: number;
   maxDepositAmount?: number;
-  interestCompoundingPeriodType: { id: number; code: string; description?: string; value?: string };
-  interestPostingPeriodType: { id: number; code: string; description?: string; value?: string };
-  interestCalculationType: { id: number; code: string; description?: string; value?: string };
-  interestCalculationDaysInYearType: { id: number; code: string; description?: string; value?: string };
+  // DepositRecurringDetail fields (recurring-specific)
   isMandatoryDeposit?: boolean;
-  adjustAdvanceTowardsFuturePayments?: boolean;
   allowWithdrawal?: boolean;
-  lockinPeriodFrequency?: number;
-  lockinPeriodFrequencyType?: { id: number; code: string; description?: string; value?: string };
-  minDepositTerm: number;
-  minDepositTermType?: { id: number; code: string; description?: string };
-  minDepositTermTypeId?: { id: number; code: string; description?: string };
-  inMultiplesOfDepositTerm?: number;
-  inMultiplesOfDepositTermType?: { id: number; code: string; description?: string };
-  inMultiplesOfDepositTermTypeId?: { id: number; code: string; description?: string };
-  maxDepositTerm?: number;
-  maxDepositTermType?: { id: number; code: string; description?: string };
-  maxDepositTermTypeId?: { id: number; code: string; description?: string };
-  preClosurePenalApplicable: boolean;
-  preClosurePenalInterest?: number;
-  preClosurePenalInterestOnType?: { id: number; code: string; description?: string; value?: string };
+  adjustAdvanceTowardsFuturePayments?: boolean;
+  // Base savings product fields
+  accountingRule?: AccountingRuleType;
   withHoldTax?: boolean;
-  taxGroup?: { id: number; name: string } | null;
+  taxGroup?: TaxGroup | null;
   taxGroupId?: number;
+  charges?: Array<{
+    id: number;
+    chargeId: number;
+    name: string;
+    amount: number;
+    chargeTimeType: EnumOptionData;
+    chargeCalculationType: EnumOptionData;
+    isPenalty: boolean;
+    isActive: boolean;
+  }>;
+  accountingMappings?: SavingsProductAccountingMappings;
+  paymentChannelToFundSourceMappings?: PaymentChannelToFundSourceMapping[];
+  feeToIncomeAccountMappings?: FeeToIncomeAccountMapping[];
+  penaltyToIncomeAccountMappings?: PenaltyToIncomeAccountMapping[];
+  // Interest rate charts
   activeChart?: {
     id: number;
     name?: string;
+    description?: string;
     fromDate: string | number[];
     endDate?: string | number[] | null;
     isPrimaryGroupingByAmount?: boolean;
     chartSlabs: Array<{
       id: number;
       description: string;
-      periodType: { id: number; code: string; description?: string; value?: string };
+      periodType: EnumOptionData;
       fromPeriod: number;
       toPeriod?: number | null;
       amountRangeFrom?: number | null;
@@ -539,24 +615,6 @@ export interface RecurringDepositProduct {
       incentives?: unknown[];
     }>;
   };
-  charges?: Array<{ id: number; name?: string }>;
-  accountingRule?: { id: number; code?: string; description?: string; value?: string };
-  accountingMappings?: {
-    savingsReferenceAccount?: { id: number; name: string; glCode?: string };
-    savingsControlAccount?: { id: number; name: string; glCode?: string };
-    transfersInSuspenseAccount?: { id: number; name: string; glCode?: string };
-    interestOnSavingsAccount?: { id: number; name: string; glCode?: string };
-    incomeFromFeeAccount?: { id: number; name: string; glCode?: string };
-    incomeFromPenaltyAccount?: { id: number; name: string; glCode?: string };
-    feesReceivableAccount?: { id: number; name: string; glCode?: string };
-    penaltiesReceivableAccount?: { id: number; name: string; glCode?: string };
-    interestPayableAccount?: { id: number; name: string; glCode?: string };
-  };
-  paymentChannelToFundSourceMappings?: unknown[];
-  feeToIncomeAccountMappings?: unknown[];
-  penaltyToIncomeAccountMappings?: unknown[];
-  recurringFrequency?: number;
-  recurringFrequencyType?: { id: number; code: string; description?: string; value?: string };
 }
 
 export interface RecurringDepositProductCreateRequest {
@@ -573,28 +631,44 @@ export interface RecurringDepositProductCreateRequest {
   interestPostingPeriodType: number;
   interestCalculationType: number;
   interestCalculationDaysInYearType: number;
+  minBalanceForInterestCalculation?: number;
   accountingRule: number;
+  // DepositTermDetail fields
   minDepositTerm: number;
   minDepositTermTypeId: number;
-  depositAmount: number;
-  minDepositAmount?: number;
-  maxDepositAmount?: number;
-  recurringFrequency: number;
-  recurringFrequencyType: number;
-  lockinPeriodFrequency?: number;
-  lockinPeriodFrequencyType?: number;
   maxDepositTerm?: number;
   maxDepositTermTypeId?: number;
   inMultiplesOfDepositTerm?: number;
   inMultiplesOfDepositTermTypeId?: number;
+  // DepositProductAmountDetails fields
+  depositAmount: number;
+  minDepositAmount?: number;
+  maxDepositAmount?: number;
+  // Lock-in period
+  lockinPeriodFrequency?: number;
+  lockinPeriodFrequencyType?: number;
+  // Pre-closure
   preClosurePenalApplicable?: boolean;
   preClosurePenalInterest?: number;
   preClosurePenalInterestOnTypeId?: number;
+  // Recurring-specific
   isMandatoryDeposit?: boolean;
   allowWithdrawal?: boolean;
   adjustAdvanceTowardsFuturePayments?: boolean;
+  // Tax
   withHoldTax?: boolean;
   taxGroupId?: number;
+  // GL account mappings
+  savingsReferenceAccountId?: number;
+  savingsControlAccountId?: number;
+  transfersInSuspenseAccountId?: number;
+  interestOnSavingsAccountId?: number;
+  incomeFromFeeAccountId?: number;
+  incomeFromPenaltyAccountId?: number;
+  feesReceivableAccountId?: number;
+  penaltiesReceivableAccountId?: number;
+  interestPayableAccountId?: number;
+  // Interest rate charts
   charts?: Array<{
     name?: string;
     description?: string;
@@ -615,15 +689,7 @@ export interface RecurringDepositProductCreateRequest {
     }>;
   }>;
   charges?: Array<{ id: number }>;
-  savingsReferenceAccountId?: number;
-  savingsControlAccountId?: number;
-  transfersInSuspenseAccountId?: number;
-  interestOnSavingsAccountId?: number;
-  incomeFromFeeAccountId?: number;
-  incomeFromPenaltyAccountId?: number;
-  feesReceivableAccountId?: number;
-  penaltiesReceivableAccountId?: number;
-  interestPayableAccountId?: number;
+  // Payment/fee/penalty mappings
   paymentChannelToFundSourceMappings?: Array<{ paymentTypeId: number; fundSourceAccountId: number }>;
   feeToIncomeAccountMappings?: Array<{ chargeId: number; incomeAccountId: number }>;
   penaltyToIncomeAccountMappings?: Array<{ chargeId: number; incomeAccountId: number }>;
@@ -721,8 +787,32 @@ export interface SavingsProductCreateRequest {
   daysToEscheat?: number;
   withHoldTax?: boolean;
   taxGroupId?: number;
-  accountMappingForPayment?: string;
   monthDayFormat?: string;
+  savingsReferenceAccountId?: number;
+  savingsControlAccountId?: number;
+  transfersInSuspenseAccountId?: number;
+  interestOnSavingsAccountId?: number;
+  incomeFromFeeAccountId?: number;
+  incomeFromPenaltyAccountId?: number;
+  overdraftPortfolioControlId?: number;
+  incomeFromInterestId?: number;
+  lossesWrittenOffId?: number;
+  feesReceivableAccountId?: number;
+  penaltiesReceivableAccountId?: number;
+  interestPayableAccountId?: number;
+  escheatLiabilityAccountId?: number;
+  paymentChannelToFundSourceMappings?: Array<{
+    paymentTypeId: number;
+    fundSourceAccountId: number;
+  }>;
+  feeToIncomeAccountMappings?: Array<{
+    chargeId: number;
+    incomeAccountId: number;
+  }>;
+  penaltyToIncomeAccountMappings?: Array<{
+    chargeId: number;
+    incomeAccountId: number;
+  }>;
 }
 
 // ─── Fixed Deposit Product (Section 11) ───────────────────────
@@ -733,33 +823,68 @@ export interface FixedDepositProduct {
   shortName?: string;
   description?: string;
   currency: { code: string; name: string; decimalPlaces: number; displaySymbol: string; inMultiplesOf?: number };
-  minDepositTerm: number;
-  maxDepositTerm?: number;
-  minDepositTermType: { id: number; code: string; description?: string; value?: string };
-  maxDepositTermType?: { id: number; code: string; description?: string; value?: string };
+  nominalAnnualInterestRate: number;
+  interestCompoundingPeriodType: EnumOptionData;
+  interestPostingPeriodType: EnumOptionData;
+  interestCalculationType: EnumOptionData;
+  interestCalculationDaysInYearType: EnumOptionData;
+  minBalanceForInterestCalculation?: number;
+  lockinPeriodFrequency?: number;
+  lockinPeriodFrequencyType?: EnumOptionData;
+  // DepositProductTermAndPreClosure fields
   preClosurePenalApplicable: boolean;
   preClosurePenalInterest?: number;
-  preClosurePenalInterestOnType?: { id: number; code: string; description: string };
-  interestCompoundingPeriodType: { id: number; code: string; description: string };
-  interestPostingPeriodType: { id: number; code: string; description: string };
-  interestCalculationType: { id: number; code: string; description: string };
-  interestCalculationDaysInYearType: { id: number; code: string; description: string };
-  accountingRule: { id: number; code: string; description: string };
+  preClosurePenalInterestOnType?: EnumOptionData;
+  // DepositTermDetail fields
+  minDepositTerm: number;
+  maxDepositTerm?: number;
+  minDepositTermType: EnumOptionData;
+  maxDepositTermType?: EnumOptionData;
+  inMultiplesOfDepositTerm?: number;
+  inMultiplesOfDepositTermType?: EnumOptionData;
+  // DepositProductAmountDetails fields
+  minDepositAmount?: number;
+  depositAmount: number;
+  maxDepositAmount?: number;
+  // Base savings product fields
+  accountingRule?: AccountingRuleType;
+  withHoldTax?: boolean;
+  taxGroup?: TaxGroup | null;
+  taxGroupId?: number;
+  charges?: Array<{
+    id: number;
+    chargeId: number;
+    name: string;
+    amount: number;
+    chargeTimeType: EnumOptionData;
+    chargeCalculationType: EnumOptionData;
+    isPenalty: boolean;
+    isActive: boolean;
+  }>;
+  accountingMappings?: SavingsProductAccountingMappings;
+  paymentChannelToFundSourceMappings?: PaymentChannelToFundSourceMapping[];
+  feeToIncomeAccountMappings?: FeeToIncomeAccountMapping[];
+  penaltyToIncomeAccountMappings?: PenaltyToIncomeAccountMapping[];
+  // Interest rate charts
   activeChart?: {
     id: number;
+    name?: string;
+    description?: string;
     fromDate: string;
     endDate?: string;
+    isPrimaryGroupingByAmount?: boolean;
     chartSlabs: Array<{
       id: number;
       description: string;
-      periodType: { id: number; code: string; description: string };
+      periodType: EnumOptionData;
       fromPeriod: number;
-      toPeriod: number;
+      toPeriod?: number | null;
+      amountRangeFrom?: number | null;
+      amountRangeTo?: number | null;
       annualInterestRate: number;
+      incentives?: unknown[];
     }>;
   };
-  withHoldTax?: boolean;
-  taxGroupId?: number;
 }
 
 export interface FixedDepositProductCreateRequest {
@@ -776,32 +901,70 @@ export interface FixedDepositProductCreateRequest {
   interestPostingPeriodType: number;
   interestCalculationType: number;
   interestCalculationDaysInYearType: number;
+  minBalanceForInterestCalculation?: number;
   accountingRule: number;
+  // DepositTermDetail fields
   minDepositTerm: number;
   minDepositTermTypeId: number;
-  depositAmount: number;
-  lockinPeriodFrequency?: number;
-  lockinPeriodFrequencyType?: number;
   maxDepositTerm?: number;
   maxDepositTermTypeId?: number;
   inMultiplesOfDepositTerm?: number;
   inMultiplesOfDepositTermTypeId?: number;
+  // DepositProductAmountDetails fields
+  depositAmount: number;
+  minDepositAmount?: number;
+  maxDepositAmount?: number;
+  // Lock-in period
+  lockinPeriodFrequency?: number;
+  lockinPeriodFrequencyType?: number;
+  // Pre-closure
   preClosurePenalApplicable?: boolean;
   preClosurePenalInterest?: number;
   preClosurePenalInterestOnTypeId?: number;
-  minDepositAmount?: number;
-  maxDepositAmount?: number;
+  // Tax
   withHoldTax?: boolean;
   taxGroupId?: number;
+  // GL account mappings
+  savingsReferenceAccountId?: number;
+  savingsControlAccountId?: number;
+  transfersInSuspenseAccountId?: number;
+  interestOnSavingsAccountId?: number;
+  incomeFromFeeAccountId?: number;
+  incomeFromPenaltyAccountId?: number;
+  feesReceivableAccountId?: number;
+  penaltiesReceivableAccountId?: number;
+  interestPayableAccountId?: number;
+  // Interest rate charts
   charts?: Array<{
+    name?: string;
+    description?: string;
     fromDate?: string;
     endDate?: string;
+    isPrimaryGroupingByAmount?: boolean;
     locale?: string;
     dateFormat?: string;
     chartSlabs: Array<{
       periodType: number;
       fromPeriod: number;
+      toPeriod?: number | null;
+      amountRangeFrom?: number | null;
+      amountRangeTo?: number | null;
       annualInterestRate: number;
+      description?: string;
+      incentives?: unknown[];
     }>;
+  }>;
+  // Payment/fee/penalty mappings
+  paymentChannelToFundSourceMappings?: Array<{
+    paymentTypeId: number;
+    fundSourceAccountId: number;
+  }>;
+  feeToIncomeAccountMappings?: Array<{
+    chargeId: number;
+    incomeAccountId: number;
+  }>;
+  penaltyToIncomeAccountMappings?: Array<{
+    chargeId: number;
+    incomeAccountId: number;
   }>;
 }

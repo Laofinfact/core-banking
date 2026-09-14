@@ -26,6 +26,14 @@ export type {
   FixedDepositProduct,
   FixedDepositProductCreateRequest,
   FixedDepositAccountCreateRequest,
+  GLAccountMapping,
+  SavingsProductAccountingMappings,
+  TaxGroup,
+  PaymentChannelToFundSourceMapping,
+  FeeToIncomeAccountMapping,
+  PenaltyToIncomeAccountMapping,
+  EnumOptionData,
+  AccountingRuleType,
 } from "./types/deposit";
 
 export {
@@ -40,6 +48,7 @@ export {
   PRE_CLOSURE_PENALTY_TYPES,
   CHART_SLAB_PERIOD_TYPES,
   ACCOUNTING_RULES,
+  WITHDRAWAL_FEE_TYPES,
 } from "./constants/status";
 
 export {
@@ -48,6 +57,7 @@ export {
   createSavingsProductSchema,
   createRecurringDepositAccountSchema,
   createRecurringDepositProductSchema,
+  createFixedDepositProductSchema,
   holdAmountSchema,
 } from "./schemas/deposit.schema";
 export type {
@@ -56,6 +66,7 @@ export type {
   CreateSavingsProductFormValues,
   CreateRecurringDepositAccountFormValues,
   CreateRecurringDepositProductFormValues,
+  CreateFixedDepositProductFormValues,
   HoldAmountFormValues,
 } from "./schemas/deposit.schema";
 
@@ -126,7 +137,7 @@ export {
   updateSavingsProduct,
   deleteSavingsProduct,
 } from "./api/deposit";
-export type { SavingsProductTemplate } from "./api/deposit";
+export type { SavingsProductTemplate, GLOption, AccountingMappingOptions, FixedDepositProductTemplate } from "./api/deposit";
 
 export { useSavingsAccounts, useSavingsAccount, depositKeys } from "./hooks/useSavingsAccounts";
 

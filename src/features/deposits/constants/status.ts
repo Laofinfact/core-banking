@@ -74,11 +74,21 @@ export const CHART_SLAB_PERIOD_TYPES = [
   { id: 3, label: i18n.t("Years") },
 ];
 
-/** Accounting rule types */
+/**
+ * Accounting rule types (Fineract AccountingRuleType enum):
+ * 1 = None, 2 = Cash Based, 3 = Accrual (Periodic), 4 = Accrual (Upfront)
+ */
 export const ACCOUNTING_RULES = [
   { id: 1, label: i18n.t("None") },
-  { id: 2, label: i18n.t("Cash") },
-  { id: 3, label: i18n.t("Accrual") },
+  { id: 2, label: i18n.t("Cash Based") },
+  { id: 3, label: i18n.t("Accrual (Periodic)") },
+  { id: 4, label: i18n.t("Accrual (Upfront)") },
+];
+
+/** Withdrawal fee types (Fineract SavingsWithdrawalFeesType enum) */
+export const WITHDRAWAL_FEE_TYPES = [
+  { id: 1, label: i18n.t("Flat") },
+  { id: 2, label: i18n.t("Percent of Amount") },
 ];
 
 /** Deposit account type display labels */

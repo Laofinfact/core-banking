@@ -31,6 +31,28 @@ import { currentDate } from "@/lib/utils";
 
 // ─── Savings Products ────────────────────────────────────────────
 
+export interface GLOption {
+  id: number;
+  name: string;
+  glCode: string;
+}
+
+export interface AccountingMappingOptions {
+  savingsReferenceAccountOptions?: GLOption[];
+  savingsControlAccountOptions?: GLOption[];
+  transfersInSuspenseAccountOptions?: GLOption[];
+  interestOnSavingsAccountOptions?: GLOption[];
+  incomeFromFeeAccountOptions?: GLOption[];
+  incomeFromPenaltyAccountOptions?: GLOption[];
+  overdraftPortfolioControlOptions?: GLOption[];
+  incomeFromInterestOptions?: GLOption[];
+  lossesWrittenOffOptions?: GLOption[];
+  feesReceivableAccountOptions?: GLOption[];
+  penaltiesReceivableAccountOptions?: GLOption[];
+  interestPayableAccountOptions?: GLOption[];
+  escheatLiabilityOptions?: GLOption[];
+}
+
 export interface SavingsProductTemplate {
   currencyOptions: Array<{
     code: string;
@@ -47,17 +69,17 @@ export interface SavingsProductTemplate {
   withdrawalFeeTypeOptions: Array<{ id: number; code: string; value: string }>;
   paymentTypeOptions: Array<{ id: number; name: string }>;
   accountingRuleOptions: Array<{ id: number; code: string; value: string }>;
-  accountingMappingOptions: Record<string, Array<{ id: number; name: string; glCode: string }>>;
+  accountingMappingOptions: AccountingMappingOptions;
   chargeOptions: Array<{
     id: number;
     name: string;
     amount: number;
-    chargeTimeType?: { id: number };
-    chargeCalculationType?: { id: number };
+    chargeTimeType?: { id: number; code: string; value: string };
+    chargeCalculationType?: { id: number; code: string; value: string };
+    currency?: { code: string; name: string; decimalPlaces: number; displaySymbol?: string };
   }>;
   penaltyOptions: Array<{ id: number; name: string; amount: number }>;
   taxGroupOptions: Array<{ id: number; name: string }>;
-  accountMappingForPayment?: string;
 }
 
 export async function fetchSavingsProductTemplate(): Promise<SavingsProductTemplate> {
@@ -1241,8 +1263,31 @@ export interface FixedDepositProductTemplate {
   interestCalculationDaysInYearTypeOptions?: Array<{ id: number; code: string; value: string }>;
   lockinPeriodFrequencyTypeOptions?: Array<{ id: number; code: string; value: string }>;
   accountingRuleOptions?: Array<{ id: number; code: string; value: string }>;
-  chargeOptions?: Array<{ id: number; name: string; amount: number }>;
+  chargeOptions?: Array<{
+    id: number;
+    name: string;
+    amount: number;
+    chargeTimeType?: { id: number; code: string; value: string };
+    chargeCalculationType?: { id: number; code: string; value: string };
+    currency?: { code: string; name: string; decimalPlaces: number; displaySymbol?: string };
+  }>;
+  penaltyOptions?: Array<{ id: number; name: string; amount: number }>;
   taxGroupOptions?: Array<{ id: number; name: string }>;
+  withdrawalFeeTypeOptions?: Array<{ id: number; code: string; value: string }>;
+  paymentTypeOptions?: Array<{ id: number; name: string }>;
+  periodFrequencyTypeOptions?: Array<{ id: number; code: string; value: string }>;
+  preClosurePenalInterestOnTypeOptions?: Array<{ id: number; code: string; value: string }>;
+  accountingMappingOptions?: AccountingMappingOptions;
+  chartTemplate?: {
+    periodTypes?: Array<{ id: number; code: string; value: string }>;
+    entityTypeOptions?: Array<{ id: number; code: string; value: string }>;
+    attributeNameOptions?: Array<{ id: number; code: string; value: string }>;
+    conditionTypeOptions?: Array<{ id: number; code: string; value: string }>;
+    incentiveTypeOptions?: Array<{ id: number; code: string; value: string }>;
+    genderOptions?: Array<{ id: number; name: string }>;
+    clientTypeOptions?: Array<{ id: number; name: string }>;
+    clientClassificationOptions?: Array<{ id: number; name: string }>;
+  };
 }
 
 export async function fetchFixedDepositProductTemplate(): Promise<FixedDepositProductTemplate> {

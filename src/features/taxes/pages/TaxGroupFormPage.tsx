@@ -181,7 +181,7 @@ const TaxGroupFormPage: FC = () => {
             {fields.map((field, index) => (
               <div key={field.id} className="flex items-start gap-4 p-4 border rounded-lg">
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
+                  <div className=" space-y-1.5">
                     <label className="block text-sm font-medium">{t("Tax Component")}</label>
                     <Controller
                       name={`taxComponents.${index}.taxComponentId`}

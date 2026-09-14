@@ -14,6 +14,8 @@ import {
   Clock,
   AlertTriangle,
   PiggyBank,
+  Link,
+  BookOpen,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,9 +24,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useSavingsProduct } from "@/features/deposits";
 
-function enumVal(v: any, fallback = ""): string {
+function enumVal(v: unknown, fallback = ""): string {
   if (v == null) return fallback;
-  if (typeof v === "object") return v.value ?? v.code ?? v.description ?? String(v.id) ?? fallback;
+  if (typeof v === "object" && v !== null) {
+    const obj = v as Record<string, unknown>;
+    return (obj.value ?? obj.code ?? obj.description ?? String(obj.id)) as string ?? fallback;
+  }
   return String(v);
 }
 
@@ -36,9 +41,25 @@ const COMPOUNDING_LABELS: Record<number, string> = {
   6: "Semi-Annual",
   7: "Annual",
 };
-const POSTING_LABELS: Record<number, string> = { 1: "Monthly", 4: "Quarterly", 5: "Semi-Annual", 7: "Annual" };
+const POSTING_LABELS: Record<number, string> = {
+  1: "Daily",
+  4: "Monthly",
+  5: "Quarterly",
+  6: "Semi-Annual",
+  7: "Annual",
+  8: "Anniversary Monthly",
+  9: "Anniversary Quarterly",
+  10: "Anniversary Bi-Annual",
+  11: "Anniversary Annual",
+};
 const CALCULATION_LABELS: Record<number, string> = { 1: "Daily Balance", 2: "Average Daily Balance" };
 const DAYS_IN_YEAR_LABELS: Record<number, string> = { 360: "360 Days", 364: "364 Days", 365: "365 Days", 1: "Actual" };
+const ACCOUNTING_RULE_LABELS: Record<number, string> = {
+  1: "None",
+  2: "Cash Based",
+  3: "Accrual (Periodic)",
+  4: "Accrual (Upfront)",
+};
 
 const InfoRow: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode }> = ({
   icon,
@@ -119,7 +140,10 @@ const SavingsProductDetailPage: React.FC = () => {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const p = product as any;
+  const mappings = p.accountingMappings ?? {};
+  const accountingRuleId = p.accountingRule ?? p.accountingType ?? 1;
 
   return (
     <div className="p-6 max-w-5xl m-auto space-y-6">
@@ -153,7 +177,7 @@ const SavingsProductDetailPage: React.FC = () => {
             <InfoRow
               icon={<DollarSign className="h-4 w-4" />}
               label={t("Currency")}
-              value={p.currency?.displaySymbol ?? p.currency?.code ?? "—"}
+              value={`${p.currency?.code ?? "—"} (${p.currency?.displaySymbol ?? ""})`}
             />
             <InfoRow
               icon={<Percent className="h-4 w-4 text-emerald-500" />}
@@ -264,11 +288,48 @@ const SavingsProductDetailPage: React.FC = () => {
               label={t("Allow Overdraft")}
               value={p.allowOverdraft ? t("Yes") : t("No")}
             />
+            {p.allowOverdraft && (
+              <>
+                <InfoRow
+                  icon={<DollarSign className="h-4 w-4" />}
+                  label={t("Overdraft Limit")}
+                  value={p.overdraftLimit?.toLocaleString() ?? "—"}
+                />
+                <InfoRow
+                  icon={<Percent className="h-4 w-4" />}
+                  label={t("Overdraft Interest Rate (%)")}
+                  value={p.nominalAnnualInterestRateOverdraft != null ? `${p.nominalAnnualInterestRateOverdraft}%` : "—"}
+                />
+                <InfoRow
+                  icon={<DollarSign className="h-4 w-4" />}
+                  label={t("Min Overdraft for Interest Calc")}
+                  value={p.minOverdraftForInterestCalculation?.toLocaleString() ?? "—"}
+                />
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Link className="h-5 w-5 text-[#D32F2F]" />
+              {t("Lien")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
             <InfoRow
-              icon={<DollarSign className="h-4 w-4" />}
-              label={t("Overdraft Limit")}
-              value={p.overdraftLimit?.toLocaleString() ?? "—"}
+              icon={<Link className="h-4 w-4" />}
+              label={t("Lien Allowed")}
+              value={p.lienAllowed ? t("Yes") : t("No")}
             />
+            {p.lienAllowed && (
+              <InfoRow
+                icon={<DollarSign className="h-4 w-4" />}
+                label={t("Max Lien Limit")}
+                value={p.maxAllowedLienLimit?.toLocaleString() ?? "—"}
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -316,6 +377,108 @@ const SavingsProductDetailPage: React.FC = () => {
               label={t("Withhold Tax")}
               value={p.withHoldTax ? t("Yes") : t("No")}
             />
+            {p.withHoldTax && (
+              <InfoRow
+                icon={<FileText className="h-4 w-4" />}
+                label={t("Tax Group")}
+                value={p.taxGroup?.name ?? (p.taxGroupId ? `#${p.taxGroupId}` : "—")}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BookOpen className="h-5 w-5 text-[#D32F2F]" />
+              {t("Accounting")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-gray-100 dark:divide-gray-800">
+            <InfoRow
+              icon={<BookOpen className="h-4 w-4" />}
+              label={t("Accounting Rule")}
+              value={ACCOUNTING_RULE_LABELS[accountingRuleId] ?? enumVal(accountingRuleId, "—")}
+            />
+            {(accountingRuleId === 2 || accountingRuleId === 3 || accountingRuleId === 4) && (
+              <>
+                <InfoRow
+                  icon={<Landmark className="h-4 w-4" />}
+                  label={t("Savings Reference Account")}
+                  value={mappings.savingsReferenceAccount ? `${mappings.savingsReferenceAccount.name} (${mappings.savingsReferenceAccount.glCode ?? "—"})` : "—"}
+                />
+                <InfoRow
+                  icon={<Landmark className="h-4 w-4" />}
+                  label={t("Savings Control Account")}
+                  value={mappings.savingsControlAccount ? `${mappings.savingsControlAccount.name} (${mappings.savingsControlAccount.glCode ?? "—"})` : "—"}
+                />
+                <InfoRow
+                  icon={<Landmark className="h-4 w-4" />}
+                  label={t("Interest on Savings Account")}
+                  value={mappings.interestOnSavingsAccount ? `${mappings.interestOnSavingsAccount.name} (${mappings.interestOnSavingsAccount.glCode ?? "—"})` : "—"}
+                />
+                <InfoRow
+                  icon={<Landmark className="h-4 w-4" />}
+                  label={t("Income from Fees Account")}
+                  value={mappings.incomeFromFeeAccount ? `${mappings.incomeFromFeeAccount.name} (${mappings.incomeFromFeeAccount.glCode ?? "—"})` : "—"}
+                />
+                <InfoRow
+                  icon={<Landmark className="h-4 w-4" />}
+                  label={t("Income from Penalties Account")}
+                  value={mappings.incomeFromPenaltyAccount ? `${mappings.incomeFromPenaltyAccount.name} (${mappings.incomeFromPenaltyAccount.glCode ?? "—"})` : "—"}
+                />
+                <InfoRow
+                  icon={<Landmark className="h-4 w-4" />}
+                  label={t("Transfers in Suspense Account")}
+                  value={mappings.transfersInSuspenseAccount ? `${mappings.transfersInSuspenseAccount.name} (${mappings.transfersInSuspenseAccount.glCode ?? "—"})` : "—"}
+                />
+                {p.allowOverdraft && (
+                  <>
+                    <InfoRow
+                      icon={<Landmark className="h-4 w-4" />}
+                      label={t("Overdraft Portfolio Control")}
+                      value={mappings.overdraftPortfolioControl ? `${mappings.overdraftPortfolioControl.name} (${mappings.overdraftPortfolioControl.glCode ?? "—"})` : "—"}
+                    />
+                    <InfoRow
+                      icon={<Landmark className="h-4 w-4" />}
+                      label={t("Income from Interest")}
+                      value={mappings.incomeFromInterest ? `${mappings.incomeFromInterest.name} (${mappings.incomeFromInterest.glCode ?? "—"})` : "—"}
+                    />
+                    <InfoRow
+                      icon={<Landmark className="h-4 w-4" />}
+                      label={t("Losses Written Off")}
+                      value={mappings.lossesWrittenOff ? `${mappings.lossesWrittenOff.name} (${mappings.lossesWrittenOff.glCode ?? "—"})` : "—"}
+                    />
+                  </>
+                )}
+                {accountingRuleId === 3 && (
+                  <>
+                    <InfoRow
+                      icon={<Landmark className="h-4 w-4" />}
+                      label={t("Fees Receivable Account")}
+                      value={mappings.feesReceivableAccount ? `${mappings.feesReceivableAccount.name} (${mappings.feesReceivableAccount.glCode ?? "—"})` : "—"}
+                    />
+                    <InfoRow
+                      icon={<Landmark className="h-4 w-4" />}
+                      label={t("Penalties Receivable Account")}
+                      value={mappings.penaltiesReceivableAccount ? `${mappings.penaltiesReceivableAccount.name} (${mappings.penaltiesReceivableAccount.glCode ?? "—"})` : "—"}
+                    />
+                    <InfoRow
+                      icon={<Landmark className="h-4 w-4" />}
+                      label={t("Interest Payable Account")}
+                      value={mappings.interestPayableAccount ? `${mappings.interestPayableAccount.name} (${mappings.interestPayableAccount.glCode ?? "—"})` : "—"}
+                    />
+                  </>
+                )}
+                {p.isDormancyTrackingActive && (
+                  <InfoRow
+                    icon={<Landmark className="h-4 w-4" />}
+                    label={t("Escheat Liability Account")}
+                    value={mappings.escheatLiabilityAccount ? `${mappings.escheatLiabilityAccount.name} (${mappings.escheatLiabilityAccount.glCode ?? "—"})` : "—"}
+                  />
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

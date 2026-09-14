@@ -20,7 +20,8 @@ import {
   createSavingsProduct,
   updateSavingsProduct,
 } from "@/features/deposits";
-import type { SavingsProductCreateRequest, SavingsProductTemplate } from "@/features/deposits";
+import type { SavingsProductCreateRequest, GLOption } from "@/features/deposits";
+import type { AccountingMappingOptions, SavingsProductTemplate } from "../api/deposit";
 import { CurrencySelect } from "@/components/shared/CurrencySelect";
 
 type FormValues = CreateSavingsProductFormValues;
@@ -92,8 +93,14 @@ const FALLBACK_LOCKIN_TYPE = [
 
 const FALLBACK_ACCOUNTING_RULES = [
   { id: 1, value: "None" },
-  { id: 2, value: "Cash" },
-  { id: 3, value: "Accrual" },
+  { id: 2, value: "Cash Based" },
+  { id: 3, value: "Accrual (Periodic)" },
+  { id: 4, value: "Accrual (Upfront)" },
+];
+
+const FALLBACK_WITHDRAWAL_FEE_TYPES = [
+  { id: 1, value: "Flat" },
+  { id: 2, value: "Percent of Amount" },
 ];
 
 const MONTHS = [
@@ -210,8 +217,8 @@ const SavingsProductFormPage: React.FC = () => {
   const withHoldTax = watch("withHoldTax");
   const lienAllowed = watch("lienAllowed");
   const accountingRule = watch("accountingRule");
-  const isCashOrAccrual = accountingRule === 2 || accountingRule === 3;
-  const isAccrual = accountingRule === 3;
+  const isCashOrAccrual = accountingRule === 2 || accountingRule === 3 || accountingRule === 4;
+  const isAccrualPeriodic = accountingRule === 3;
   const feeAmount = watch("feeAmount");
 
   const tp = template as SavingsProductTemplate | undefined;
@@ -222,11 +229,14 @@ const SavingsProductFormPage: React.FC = () => {
   const daysInYearOptions = tp?.interestCalculationDaysInYearTypeOptions ?? FALLBACK_DAYS_IN_YEAR;
   const lockinTypeOptions = tp?.lockinPeriodFrequencyTypeOptions ?? FALLBACK_LOCKIN_TYPE;
   const accountingRuleOptions = tp?.accountingRuleOptions ?? FALLBACK_ACCOUNTING_RULES;
+  const withdrawalFeeTypeOptions = tp?.withdrawalFeeTypeOptions ?? FALLBACK_WITHDRAWAL_FEE_TYPES;
+  const amOptions: AccountingMappingOptions | undefined = tp?.accountingMappingOptions;
 
   useEffect(() => {
     if (!existingProduct) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const p = existingProduct as any;
+    const mappings = p.accountingMappings ?? {};
     reset({
       name: p.name ?? "",
       shortName: p.shortName ?? "",
@@ -256,7 +266,7 @@ const SavingsProductFormPage: React.FC = () => {
       enforceMinRequiredBalance: !!p.enforceMinRequiredBalance,
       lienAllowed: !!p.lienAllowed,
       maxAllowedLienLimit: p.maxAllowedLienLimit ?? undefined,
-      accountingRule: p.accountingType ?? 1,
+      accountingRule: p.accountingRule ?? p.accountingType ?? 1,
       isDormancyTrackingActive: !!p.isDormancyTrackingActive,
       daysToInactive: p.daysToInactive ?? undefined,
       daysToDormancy: p.daysToDormancy ?? undefined,
@@ -266,6 +276,19 @@ const SavingsProductFormPage: React.FC = () => {
       locale: "en",
       dateFormat: "yyyy-MM-dd",
       monthDayFormat: "dd MMMM",
+      savingsReferenceAccountId: p.savingsReferenceAccountId ?? mappings?.savingsReferenceAccount?.id ?? undefined,
+      savingsControlAccountId: p.savingsControlAccountId ?? mappings?.savingsControlAccount?.id ?? undefined,
+      transfersInSuspenseAccountId: p.transfersInSuspenseAccountId ?? mappings?.transfersInSuspenseAccount?.id ?? undefined,
+      interestOnSavingsAccountId: p.interestOnSavingsAccountId ?? mappings?.interestOnSavingsAccount?.id ?? undefined,
+      incomeFromFeeAccountId: p.incomeFromFeeAccountId ?? mappings?.incomeFromFeeAccount?.id ?? undefined,
+      incomeFromPenaltyAccountId: p.incomeFromPenaltyAccountId ?? mappings?.incomeFromPenaltyAccount?.id ?? undefined,
+      overdraftPortfolioControlId: p.overdraftPortfolioControlId ?? mappings?.overdraftPortfolioControl?.id ?? undefined,
+      incomeFromInterestId: p.incomeFromInterestId ?? mappings?.incomeFromInterest?.id ?? undefined,
+      lossesWrittenOffId: p.lossesWrittenOffId ?? mappings?.lossesWrittenOff?.id ?? undefined,
+      feesReceivableAccountId: p.feesReceivableAccountId ?? mappings?.feesReceivableAccount?.id ?? undefined,
+      penaltiesReceivableAccountId: p.penaltiesReceivableAccountId ?? mappings?.penaltiesReceivableAccount?.id ?? undefined,
+      interestPayableAccountId: p.interestPayableAccountId ?? mappings?.interestPayableAccount?.id ?? undefined,
+      escheatLiabilityAccountId: p.escheatLiabilityAccountId ?? mappings?.escheatLiabilityAccount?.id ?? undefined,
     });
   }, [existingProduct, reset]);
 
@@ -308,6 +331,19 @@ const SavingsProductFormPage: React.FC = () => {
       daysToEscheat: values.daysToEscheat || undefined,
       withHoldTax: values.withHoldTax || undefined,
       taxGroupId: values.taxGroupId ?? undefined,
+      savingsReferenceAccountId: values.savingsReferenceAccountId ?? undefined,
+      savingsControlAccountId: values.savingsControlAccountId ?? undefined,
+      transfersInSuspenseAccountId: values.transfersInSuspenseAccountId ?? undefined,
+      interestOnSavingsAccountId: values.interestOnSavingsAccountId ?? undefined,
+      incomeFromFeeAccountId: values.incomeFromFeeAccountId ?? undefined,
+      incomeFromPenaltyAccountId: values.incomeFromPenaltyAccountId ?? undefined,
+      overdraftPortfolioControlId: values.overdraftPortfolioControlId ?? undefined,
+      incomeFromInterestId: values.incomeFromInterestId ?? undefined,
+      lossesWrittenOffId: values.lossesWrittenOffId ?? undefined,
+      feesReceivableAccountId: values.feesReceivableAccountId ?? undefined,
+      penaltiesReceivableAccountId: values.penaltiesReceivableAccountId ?? undefined,
+      interestPayableAccountId: values.interestPayableAccountId ?? undefined,
+      escheatLiabilityAccountId: values.escheatLiabilityAccountId ?? undefined,
     };
 
     if (isEdit) {
@@ -500,21 +536,15 @@ const SavingsProductFormPage: React.FC = () => {
             </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Withdrawal Fee Type")}</label>
-              <Select
-                value={watch("withdrawalFeeType") !== undefined ? String(watch("withdrawalFeeType")) : ""}
-                onValueChange={(v) => setValue("withdrawalFeeType", v ? Number(v) : undefined)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("Select")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(tp?.withdrawalFeeTypeOptions ?? []).map((o) => (
-                    <SelectItem key={o.id} value={String(o.id)}>
-                      {o.value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <EnumSelect
+                value={watch("withdrawalFeeType")}
+                onChange={(v) => setValue("withdrawalFeeType", v)}
+                options={withdrawalFeeTypeOptions}
+                placeholder={t("Select")}
+              />
+              {errors.withdrawalFeeType && (
+                <p className="text-sm text-red-500">{errors.withdrawalFeeType.message as string}</p>
+              )}
             </div>
             <div className="col-span-2 flex items-center gap-2 pt-2">
               <Checkbox
@@ -730,7 +760,7 @@ const SavingsProductFormPage: React.FC = () => {
                 <GLField
                   label="Savings Reference"
                   name="savingsReferenceAccountId"
-                  tp={tp}
+                  options={amOptions?.savingsReferenceAccountOptions ?? []}
                   setValue={setValue}
                   watch={watch}
                   errors={errors}
@@ -738,7 +768,7 @@ const SavingsProductFormPage: React.FC = () => {
                 <GLField
                   label="Savings Control"
                   name="savingsControlAccountId"
-                  tp={tp}
+                  options={amOptions?.savingsControlAccountOptions ?? []}
                   setValue={setValue}
                   watch={watch}
                   errors={errors}
@@ -746,7 +776,7 @@ const SavingsProductFormPage: React.FC = () => {
                 <GLField
                   label="Interest on Savings"
                   name="interestOnSavingsAccountId"
-                  tp={tp}
+                  options={amOptions?.interestOnSavingsAccountOptions ?? []}
                   setValue={setValue}
                   watch={watch}
                   errors={errors}
@@ -754,7 +784,7 @@ const SavingsProductFormPage: React.FC = () => {
                 <GLField
                   label="Income from Fees"
                   name="incomeFromFeeAccountId"
-                  tp={tp}
+                  options={amOptions?.incomeFromFeeAccountOptions ?? []}
                   setValue={setValue}
                   watch={watch}
                   errors={errors}
@@ -762,7 +792,7 @@ const SavingsProductFormPage: React.FC = () => {
                 <GLField
                   label="Income from Penalties"
                   name="incomeFromPenaltyAccountId"
-                  tp={tp}
+                  options={amOptions?.incomeFromPenaltyAccountOptions ?? []}
                   setValue={setValue}
                   watch={watch}
                   errors={errors}
@@ -770,17 +800,17 @@ const SavingsProductFormPage: React.FC = () => {
                 <GLField
                   label="Transfers in Suspense"
                   name="transfersInSuspenseAccountId"
-                  tp={tp}
+                  options={amOptions?.transfersInSuspenseAccountOptions ?? []}
                   setValue={setValue}
                   watch={watch}
                   errors={errors}
                 />
-                {isAccrual && (
+                {isAccrualPeriodic && (
                   <>
                     <GLField
                       label="Fees Receivable"
                       name="feesReceivableAccountId"
-                      tp={tp}
+                      options={amOptions?.feesReceivableAccountOptions ?? []}
                       setValue={setValue}
                       watch={watch}
                       errors={errors}
@@ -788,7 +818,7 @@ const SavingsProductFormPage: React.FC = () => {
                     <GLField
                       label="Penalties Receivable"
                       name="penaltiesReceivableAccountId"
-                      tp={tp}
+                      options={amOptions?.penaltiesReceivableAccountOptions ?? []}
                       setValue={setValue}
                       watch={watch}
                       errors={errors}
@@ -796,15 +826,7 @@ const SavingsProductFormPage: React.FC = () => {
                     <GLField
                       label="Interest Payable"
                       name="interestPayableAccountId"
-                      tp={tp}
-                      setValue={setValue}
-                      watch={watch}
-                      errors={errors}
-                    />
-                    <GLField
-                      label="Interest Receivable"
-                      name="interestReceivableAccountId"
-                      tp={tp}
+                      options={amOptions?.interestPayableAccountOptions ?? []}
                       setValue={setValue}
                       watch={watch}
                       errors={errors}
@@ -816,7 +838,7 @@ const SavingsProductFormPage: React.FC = () => {
                     <GLField
                       label="Overdraft Portfolio Control"
                       name="overdraftPortfolioControlId"
-                      tp={tp}
+                      options={amOptions?.overdraftPortfolioControlOptions ?? []}
                       setValue={setValue}
                       watch={watch}
                       errors={errors}
@@ -824,7 +846,7 @@ const SavingsProductFormPage: React.FC = () => {
                     <GLField
                       label="Losses Written Off"
                       name="lossesWrittenOffId"
-                      tp={tp}
+                      options={amOptions?.lossesWrittenOffOptions ?? []}
                       setValue={setValue}
                       watch={watch}
                       errors={errors}
@@ -832,7 +854,7 @@ const SavingsProductFormPage: React.FC = () => {
                     <GLField
                       label="Income from Interest (Overdraft)"
                       name="incomeFromInterestId"
-                      tp={tp}
+                      options={amOptions?.incomeFromInterestOptions ?? []}
                       setValue={setValue}
                       watch={watch}
                       errors={errors}
@@ -843,7 +865,7 @@ const SavingsProductFormPage: React.FC = () => {
                   <GLField
                     label="Escheat Liability"
                     name="escheatLiabilityAccountId"
-                    tp={tp}
+                    options={amOptions?.escheatLiabilityOptions ?? []}
                     setValue={setValue}
                     watch={watch}
                     errors={errors}
@@ -898,36 +920,27 @@ const SavingsProductFormPage: React.FC = () => {
   );
 };
 
-interface GLAccountData {
-  id: number;
-  name: string;
-  glCode: string;
-}
-
 function GLField({
   label,
   name,
-  tp,
+  options,
   watch,
   setValue,
   errors,
 }: {
   label: string;
   name: string;
-  tp: SavingsProductTemplate | undefined;
+  options: GLOption[];
   watch: UseFormWatch<FormValues>;
   setValue: UseFormSetValue<FormValues>;
   errors: Partial<Record<keyof FormValues, { message?: string } | undefined>>;
 }) {
   const { t } = useTranslation();
-  const glAccounts: GLAccountData[] = tp?.accountingMappingOptions
-    ? (Object.values(tp.accountingMappingOptions) as GLAccountData[][]).flat()
-    : [];
   const value = watch(name as keyof FormValues);
 
   return (
     <div className="space-y-1.5">
-          <label className="block text-sm font-medium">{t(label)}</label>
+      <label className="block text-sm font-medium">{t(label)}</label>
       <Select
         value={value ? String(value) : ""}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -937,7 +950,7 @@ function GLField({
           <SelectValue placeholder={t("Select GL account")} />
         </SelectTrigger>
         <SelectContent>
-          {glAccounts.map((a) => (
+          {options.map((a) => (
             <SelectItem key={a.id} value={String(a.id)}>
               {a.name} ({a.glCode})
             </SelectItem>
