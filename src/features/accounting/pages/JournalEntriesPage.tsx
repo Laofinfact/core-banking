@@ -198,6 +198,11 @@ const JournalEntriesPage: React.FC = () => {
         ),
     },
     {
+      key: "submittedOnDate",
+      header: t("Submitted"),
+      cell: (r) => <span className="text-sm">{r.submittedOnDate ? new Date(r.submittedOnDate).toLocaleDateString() : "—"}</span>,
+    },
+    {
       key: "entityType",
       header: t("Entity Type"),
       cell: (r) =>

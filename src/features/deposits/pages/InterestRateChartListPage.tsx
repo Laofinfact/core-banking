@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Trash2, Percent } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Percent } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +32,11 @@ const InterestRateChartListPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return charts.filter((c) => c.name.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q));
+    return charts.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.description ?? "").toLowerCase().includes(q),
+    );
   }, [charts, search]);
 
   const columns: ColumnDef<InterestRateChart>[] = [
@@ -57,6 +61,15 @@ const InterestRateChartListPage: React.FC = () => {
       cell: (r) => <span className="font-mono text-sm">{r.endDate ?? "—"}</span>,
     },
     {
+      key: "grouping",
+      header: t("Grouping"),
+      cell: (r) => (
+        <span className="text-sm">
+          {r.isPrimaryGroupingByAmount ? t("By Amount") : t("By Period")}
+        </span>
+      ),
+    },
+    {
       key: "slabs",
       header: t("Slabs"),
       cell: (r) => <span>{r.chartSlabs?.length ?? 0}</span>,
@@ -66,6 +79,9 @@ const InterestRateChartListPage: React.FC = () => {
       header: "",
       cell: (r) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/interest-rate-charts/${r.id}`)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)}>
             <Trash2 className="h-4 w-4 text-red-500" />
           </Button>

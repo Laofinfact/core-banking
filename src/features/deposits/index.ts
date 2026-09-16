@@ -372,12 +372,18 @@ export {
   updateInterestRateChart,
   deleteInterestRateChart,
   fetchChartSlabs,
+  fetchChartSlab,
   fetchChartSlabTemplate,
   createChartSlab,
   updateChartSlab,
   deleteChartSlab,
 } from "./api/deposit";
-export type { InterestRateChart, InterestRateChartSlab, InterestRateChartTemplate } from "./api/deposit";
+export type {
+  InterestRateChart,
+  InterestRateChartSlab,
+  InterestIncentive,
+  InterestRateChartTemplate,
+} from "./api/deposit";
 
 // Hooks — Interest Rate Charts
 export {
@@ -389,6 +395,8 @@ export {
   useUpdateInterestRateChart,
   useDeleteInterestRateChart,
   useChartSlabs,
+  useChartSlab,
+  useChartSlabTemplate,
   useCreateChartSlab,
   useUpdateChartSlab,
   useDeleteChartSlab,

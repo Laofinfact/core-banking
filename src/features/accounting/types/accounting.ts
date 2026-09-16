@@ -209,7 +209,6 @@ export interface CreateJournalEntryRequest {
   receiptNumber?: string;
   bankNumber?: string;
   externalAssetOwner?: string;
-  amount?: number;
 }
 
 export interface JournalEntryListParams {
@@ -327,6 +326,7 @@ export interface FinancialActivityData {
   id: number;
   name: string;
   code: string;
+  mappedGLAccountType?: number; // 1=ASSET, 2=LIABILITY, 3=EQUITY, 4=INCOME, 5=EXPENSE
 }
 
 export interface FinancialActivityAccountData {

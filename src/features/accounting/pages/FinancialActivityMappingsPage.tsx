@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Link2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Link2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,18 +12,21 @@ import {
   useFinancialActivityAccounts,
   useFinancialActivityAccountTemplate,
   useCreateFinancialActivityMapping,
+  useUpdateFinancialActivityMapping,
   useDeleteFinancialActivityMapping,
 } from "@/features/accounting";
-import type { FinancialActivityAccountData } from "@/features/accounting";
+import type { FinancialActivityAccountData, FinancialActivityData } from "@/features/accounting";
 
 const FinancialActivityMappingsPage: React.FC = () => {
   const { t } = useTranslation();
   const { data: mappings = [], isLoading, isError, error, refetch } = useFinancialActivityAccounts();
   const { data: template } = useFinancialActivityAccountTemplate();
   const createMutation = useCreateFinancialActivityMapping();
+  const updateMutation = useUpdateFinancialActivityMapping();
   const deleteMutation = useDeleteFinancialActivityMapping();
 
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [financialActivityId, setFinancialActivityId] = useState(0);
   const [glAccountId, setGlAccountId] = useState(0);
   const [formError, setFormError] = useState("");
@@ -37,11 +40,39 @@ const FinancialActivityMappingsPage: React.FC = () => {
       setFormError(t("Both financial activity and GL account are required."));
       return;
     }
+    // Validate GL account type matches financial activity requirement
+    const activity = activityOptions.find((a) => a.id === financialActivityId);
+    const account = glAccountOptions.find((a) => a.id === glAccountId);
+    if (activity?.mappedGLAccountType && account?.type?.id && activity.mappedGLAccountType !== account.type.id) {
+      setFormError(t("GL account type does not match the required type for this financial activity."));
+      return;
+    }
     setFormError("");
-    await createMutation.mutateAsync({ financialActivityId, glAccountId });
+    if (editingId) {
+      await updateMutation.mutateAsync({ id: editingId, payload: { financialActivityId, glAccountId } });
+    } else {
+      await createMutation.mutateAsync({ financialActivityId, glAccountId });
+    }
+    setFinancialActivityId(0);
+    setGlAccountId(0);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (mapping: FinancialActivityAccountData) => {
+    setEditingId(mapping.id);
+    setFinancialActivityId(mapping.financialActivityId ?? mapping.financialActivityData.id);
+    setGlAccountId(mapping.glAccountId ?? mapping.glAccountData.id);
+    setShowForm(true);
+    setFormError("");
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
     setFinancialActivityId(0);
     setGlAccountId(0);
     setShowForm(false);
+    setFormError("");
   };
 
   const handleDelete = async () => {
@@ -73,6 +104,9 @@ const FinancialActivityMappingsPage: React.FC = () => {
       header: "",
       cell: (r) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="sm" onClick={() => handleEdit(r)} title={t("Edit")}>
+            <Pencil className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)}>
             <Trash2 className="h-4 w-4 text-red-500" />
           </Button>
@@ -101,7 +135,7 @@ const FinancialActivityMappingsPage: React.FC = () => {
         title={t("Financial Activity Mappings")}
         description={t("Map financial activities (e.g. Fund Source) to GL accounts")}
         actions={
-          <Button onClick={() => setShowForm((s) => !s)} className="bg-[#D32F2F] hover:bg-red-700">
+          <Button onClick={() => showForm ? handleCancel() : setShowForm(true)} className="bg-[#D32F2F] hover:bg-red-700">
             <Plus className="mr-2 h-4 w-4" /> {t("New Mapping")}
           </Button>
         }
@@ -111,10 +145,10 @@ const FinancialActivityMappingsPage: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Link2 className="h-4 w-4" /> {t("Create Mapping")}
+              <Link2 className="h-4 w-4" /> {editingId ? t("Edit Mapping") : t("Create Mapping")}
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-[1fr_1fr_auto] items-end gap-4">
+          <CardContent className="grid grid-cols-[1fr_1fr_auto_auto] items-end gap-4">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium">{t("Financial Activity")} *</label>
               <Select
@@ -148,11 +182,14 @@ const FinancialActivityMappingsPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleCreate} disabled={createMutation.isPending}>
-              {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {t("Create")}
+            <Button onClick={handleCreate} disabled={createMutation.isPending || updateMutation.isPending}>
+              {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {editingId ? t("Update") : t("Create")}
             </Button>
-            {formError && <p className="col-span-3 text-sm text-red-500">{formError}</p>}
+            <Button variant="outline" onClick={handleCancel}>
+              {t("Cancel")}
+            </Button>
+            {formError && <p className="col-span-4 text-sm text-red-500">{formError}</p>}
           </CardContent>
         </Card>
       )}

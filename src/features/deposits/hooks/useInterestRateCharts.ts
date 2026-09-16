@@ -7,6 +7,8 @@ import {
   updateInterestRateChart,
   deleteInterestRateChart,
   fetchChartSlabs,
+  fetchChartSlab,
+  fetchChartSlabTemplate,
   createChartSlab,
   updateChartSlab,
   deleteChartSlab,
@@ -20,6 +22,8 @@ export const interestRateChartKeys = {
   detail: (id: number) => [...IRC, "detail", id] as const,
   template: [...IRC, "template"] as const,
   slabs: (chartId: number) => [...IRC, "slabs", chartId] as const,
+  slab: (chartId: number, slabId: number) => [...IRC, "slab", chartId, slabId] as const,
+  slabTemplate: (chartId: number) => [...IRC, "slabTemplate", chartId] as const,
 };
 
 export function useInterestRateCharts(productId?: number) {
@@ -116,5 +120,23 @@ export function useDeleteChartSlab() {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: interestRateChartKeys.slabs(variables.chartId) });
     },
+  });
+}
+
+export function useChartSlab(chartId: number | undefined, slabId: number | undefined) {
+  return useQuery({
+    queryKey: interestRateChartKeys.slab(chartId!, slabId!),
+    queryFn: () => fetchChartSlab(chartId!, slabId!),
+    enabled: !!chartId && !!slabId,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useChartSlabTemplate(chartId: number | undefined) {
+  return useQuery({
+    queryKey: interestRateChartKeys.slabTemplate(chartId!),
+    queryFn: () => fetchChartSlabTemplate(chartId!),
+    enabled: !!chartId,
+    staleTime: 10 * 60_000,
   });
 }

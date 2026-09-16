@@ -50,6 +50,7 @@ const JournalEntryFormPage: React.FC = () => {
   const [routingCode, setRoutingCode] = useState("");
   const [receiptNumber, setReceiptNumber] = useState("");
   const [bankNumber, setBankNumber] = useState("");
+  const [externalAssetOwner, setExternalAssetOwner] = useState("");
 
   const totalDebits = useMemo(() => debits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0), [debits]);
   const totalCredits = useMemo(() => credits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0), [credits]);
@@ -119,6 +120,7 @@ const JournalEntryFormPage: React.FC = () => {
         routingCode: routingCode || undefined,
         receiptNumber: receiptNumber || undefined,
         bankNumber: bankNumber || undefined,
+        externalAssetOwner: externalAssetOwner || undefined,
         debits: debits.map((r) => ({
           glAccountId: r.glAccountId,
           amount: parseFloat(r.amount),
@@ -336,6 +338,14 @@ const JournalEntryFormPage: React.FC = () => {
           <div className="space-y-1.5">
             <label className="block text-sm font-medium">{t("Bank Number")}</label>
             <Input value={bankNumber} onChange={(e) => setBankNumber(e.target.value)} placeholder={t("Optional")} />
+          </div>
+          <div className="col-span-3 space-y-1.5">
+            <label className="block text-sm font-medium">{t("External Asset Owner")}</label>
+            <Input
+              value={externalAssetOwner}
+              onChange={(e) => setExternalAssetOwner(e.target.value)}
+              placeholder={t("Optional")}
+            />
           </div>
         </CardContent>
       </Card>

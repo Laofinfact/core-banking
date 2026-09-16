@@ -1764,6 +1764,9 @@ export interface InterestRateChart {
   description: string;
   fromDate: string;
   endDate: string | null;
+  isPrimaryGroupingByAmount: boolean;
+  productId?: number;
+  productName?: string;
   chartSlabs: InterestRateChartSlab[];
 }
 
@@ -1773,11 +1776,29 @@ export interface InterestRateChartSlab {
   periodType: { id: number; code: string; value: string };
   fromPeriod: number;
   toPeriod: number;
+  amountRangeFrom: number | null;
+  amountRangeTo: number | null;
   annualInterestRate: number;
+  currencyCode: string;
+  incentives: InterestIncentive[];
+}
+
+export interface InterestIncentive {
+  id: number;
+  entityType: { id: number; code: string; value: string };
+  attributeName: { id: number; code: string; value: string };
+  conditionType: { id: number; code: string; value: string };
+  attributeValue: string;
+  incentiveType: { id: number; code: string; value: string };
+  amount: number;
 }
 
 export interface InterestRateChartTemplate {
   periodTypes: Array<{ id: number; code: string; value: string }>;
+  entityTypeOptions: Array<{ id: number; code: string; value: string }>;
+  attributeNameOptions: Array<{ id: number; code: string; value: string }>;
+  conditionTypeOptions: Array<{ id: number; code: string; value: string }>;
+  incentiveTypeOptions: Array<{ id: number; code: string; value: string }>;
 }
 
 export async function fetchInterestRateCharts(productId?: number): Promise<InterestRateChart[]> {
@@ -1815,6 +1836,11 @@ export async function deleteInterestRateChart(chartId: number): Promise<void> {
 
 export async function fetchChartSlabs(chartId: number): Promise<InterestRateChartSlab[]> {
   const { data } = await client.get<InterestRateChartSlab[]>(`/interestratecharts/${chartId}/chartslabs`);
+  return data;
+}
+
+export async function fetchChartSlab(chartId: number, slabId: number): Promise<InterestRateChartSlab> {
+  const { data } = await client.get<InterestRateChartSlab>(`/interestratecharts/${chartId}/chartslabs/${slabId}`);
   return data;
 }
 
