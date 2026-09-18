@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { useClientTransactions, useUndoClientTransaction } from "../hooks/useClientTransactions";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { ClientTransaction } from "../api/transactions";
 import { formatClientDate } from "../utils/client";
 import type { ColumnDef } from "@/components/shared/DataTable";
@@ -20,6 +21,7 @@ interface ClientTransactionsProps {
 
 const ClientTransactions: FC<ClientTransactionsProps> = ({ clientId }) => {
   const { t } = useTranslation();
+  const { hasPermission } = useClientPermissions();
   const { data: txnsData, isLoading } = useClientTransactions(clientId);
   const undoMutation = useUndoClientTransaction();
   const [undoingId, setUndoingId] = useState<number | null>(null);
@@ -39,7 +41,11 @@ const ClientTransactions: FC<ClientTransactionsProps> = ({ clientId }) => {
   );
 
   const columns: ColumnDef<ClientTransaction>[] = [
-    { key: "id", header: t("clients.transactions.id"), accessorFn: (row) => <span className="font-mono text-xs">{row.id}</span> },
+    {
+      key: "id",
+      header: t("clients.transactions.id"),
+      accessorFn: (row) => <span className="font-mono text-xs">{row.id}</span>,
+    },
     {
       key: "date",
       header: t("clients.transactions.date"),
@@ -82,7 +88,7 @@ const ClientTransactions: FC<ClientTransactionsProps> = ({ clientId }) => {
       header: t("clients.transactions.actions"),
       accessorFn: (row) => (
         <div className="flex items-center gap-1">
-          {!row.reversed && (
+          {!row.reversed && hasPermission("UNDO_TRANSACTION") && (
             <Button
               variant="ghost"
               size="sm"

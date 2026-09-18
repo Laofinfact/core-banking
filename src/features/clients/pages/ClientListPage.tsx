@@ -7,6 +7,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
 import { useClients, useClientPages } from "../hooks/useClients";
 import { useClientTemplate } from "../hooks/useClientTemplate";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import ClientTable from "../components/ClientTable";
 import ClientFilters from "../components/ClientFilters";
 import ClientBulkImport from "../components/ClientBulkImport";
@@ -17,6 +18,7 @@ const ClientListPage: FC = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { hasPermission } = useClientPermissions();
 
   // Read filters from URL
   const page = Number(searchParams.get("page") ?? "1");
@@ -103,11 +105,13 @@ const ClientListPage: FC = () => {
         description={t("Manage clients registered")}
         actions={
           <div className="flex items-center gap-2">
-            <ClientBulkImport />
-            <Button onClick={() => navigate("/clients/new")} className="bg-[#D32F2F] hover:bg-red-700">
-              <Plus className="mr-2 h-4 w-4" />
-              {t("Create Client")}
-            </Button>
+            {hasPermission("CREATE") && <ClientBulkImport />}
+            {hasPermission("CREATE") && (
+              <Button onClick={() => navigate("/clients/new")} className="bg-[#D32F2F] hover:bg-red-700">
+                <Plus className="mr-2 h-4 w-4" />
+                {t("Create Client")}
+              </Button>
+            )}
           </div>
         }
       />

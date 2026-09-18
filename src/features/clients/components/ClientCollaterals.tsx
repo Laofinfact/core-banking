@@ -20,6 +20,7 @@ import {
   useUpdateClientCollateral,
   useDeleteClientCollateral,
 } from "../hooks/useClientCollaterals";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { ClientCollateral } from "../api/collaterals";
 
 const collateralSchema = z.object({
@@ -38,6 +39,7 @@ const formatCurrency = (v: number, code = "USD") =>
 const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { hasPermission } = useClientPermissions();
   const { data: collaterals, isLoading } = useClientCollaterals(clientId);
   const { data: options } = useCollateralOptions();
   const createMutation = useCreateClientCollateral();
@@ -153,37 +155,43 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
       header: t("clients.collaterals.actions"),
       accessorFn: (row) => (
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/clients/${clientId}/collaterals/${row.id}`);
-            }}
-            title={t("View Detail")}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              openEdit(row);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteId(row.id);
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
+          {hasPermission("READ_COLLATERAL") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/clients/${clientId}/collaterals/${row.id}`);
+              }}
+              title={t("View Detail")}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+          {hasPermission("UPDATE_COLLATERAL") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                openEdit(row);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {hasPermission("DELETE_COLLATERAL") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteId(row.id);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -196,10 +204,12 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
           <Gem className="h-5 w-5" />
           {t("clients.collaterals.title")}
         </h3>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="mr-1 h-4 w-4" />
-          {t("clients.collaterals.addCollateral")}
-        </Button>
+        {hasPermission("CREATE_COLLATERAL") && (
+          <Button onClick={openCreate} size="sm">
+            <Plus className="mr-1 h-4 w-4" />
+            {t("clients.collaterals.addCollateral")}
+          </Button>
+        )}
       </div>
       <Card>
         <CardContent className="p-0">
@@ -208,7 +218,10 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
             data={collaterals ?? []}
             loading={isLoading}
             minWidth={900}
-            emptyState={{ icon: <Gem className="h-8 w-8 text-gray-300" />, message: t("clients.collaterals.noCollaterals") }}
+            emptyState={{
+              icon: <Gem className="h-8 w-8 text-gray-300" />,
+              message: t("clients.collaterals.noCollaterals"),
+            }}
           />
         </CardContent>
       </Card>
@@ -216,16 +229,18 @@ const ClientCollaterals: FC<ClientCollateralsProps> = ({ clientId }) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? t("clients.collaterals.editCollateral") : t("clients.collaterals.addCollateral")}</DialogTitle>
+            <DialogTitle>
+              {editingId ? t("clients.collaterals.editCollateral") : t("clients.collaterals.addCollateral")}
+            </DialogTitle>
             <DialogDescription>
-              {editingId
-                ? t("clients.collaterals.updateDescription")
-                : t("clients.collaterals.selectDescription")}
+              {editingId ? t("clients.collaterals.updateDescription") : t("clients.collaterals.selectDescription")}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <label className="block text-sm font-medium">{t("clients.collaterals.collateralType")} {editingId ? "" : "*"}</label>
+              <label className="block text-sm font-medium">
+                {t("clients.collaterals.collateralType")} {editingId ? "" : "*"}
+              </label>
               <Select
                 value={editingId ? undefined : ""}
                 onValueChange={(v) => setValue("collateralId", Number(v), { shouldValidate: true })}

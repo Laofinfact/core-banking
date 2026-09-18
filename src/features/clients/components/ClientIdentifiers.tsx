@@ -21,6 +21,7 @@ import {
   useUpdateClientIdentifier,
   useDeleteClientIdentifier,
 } from "../hooks/useClientIdentifiers";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { ClientIdentifier } from "../api/identifiers";
 
 const identifierSchema = z.object({
@@ -37,6 +38,7 @@ interface ClientIdentifiersProps {
 
 const ClientIdentifiers: FC<ClientIdentifiersProps> = ({ clientId }) => {
   const { t } = useTranslation();
+  const { hasPermission } = useClientPermissions();
   const { data: identifiers, isLoading } = useClientIdentifiers(clientId);
   const { data: template } = useClientIdentifierTemplate(clientId);
   const createMutation = useCreateClientIdentifier();
@@ -125,26 +127,30 @@ const ClientIdentifiers: FC<ClientIdentifiersProps> = ({ clientId }) => {
       header: t("clients.identifiers.actions"),
       accessorFn: (row) => (
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              openEdit(row);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteId(row.id);
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
+          {hasPermission("UPDATE_IDENTIFIER") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                openEdit(row);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {hasPermission("DELETE_IDENTIFIER") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteId(row.id);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -157,10 +163,12 @@ const ClientIdentifiers: FC<ClientIdentifiersProps> = ({ clientId }) => {
           <Fingerprint className="h-5 w-5" />
           {t("clients.identifiers.title")}
         </h3>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="mr-1 h-4 w-4" />
-          {t("clients.identifiers.addIdentifier")}
-        </Button>
+        {hasPermission("CREATE_IDENTIFIER") && (
+          <Button onClick={openCreate} size="sm">
+            <Plus className="mr-1 h-4 w-4" />
+            {t("clients.identifiers.addIdentifier")}
+          </Button>
+        )}
       </div>
       <Card>
         <CardContent className="p-0">
@@ -180,7 +188,9 @@ const ClientIdentifiers: FC<ClientIdentifiersProps> = ({ clientId }) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? t("clients.identifiers.editIdentifier") : t("clients.identifiers.addIdentifier")}</DialogTitle>
+            <DialogTitle>
+              {editingId ? t("clients.identifiers.editIdentifier") : t("clients.identifiers.addIdentifier")}
+            </DialogTitle>
             <DialogDescription>{t("clients.identifiers.manageDescription")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

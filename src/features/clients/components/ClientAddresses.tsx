@@ -22,6 +22,7 @@ import {
   useUpdateClientAddress,
   useDeleteClientAddress,
 } from "../hooks/useClientAddresses";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { ClientAddress } from "../api/addresses";
 
 const addressSchema = z.object({
@@ -44,6 +45,7 @@ interface ClientAddressesProps {
 
 const ClientAddresses: FC<ClientAddressesProps> = ({ clientId }) => {
   const { t } = useTranslation();
+  const { hasPermission } = useClientPermissions();
   const { data: addresses, isLoading } = useClientAddresses(clientId);
   const { data: template } = useClientAddressTemplate();
   const createMutation = useCreateClientAddress();
@@ -53,12 +55,7 @@ const ClientAddresses: FC<ClientAddressesProps> = ({ clientId }) => {
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-  } = useForm<AddressFormValues>({
+  const { register, handleSubmit, reset, setValue } = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
   });
 
@@ -145,26 +142,30 @@ const ClientAddresses: FC<ClientAddressesProps> = ({ clientId }) => {
       header: t("clients.addresses.actions"),
       accessorFn: (row) => (
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              openEdit(row);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteId(row.addressId);
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
+          {hasPermission("UPDATE_ADDRESS") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                openEdit(row);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {hasPermission("DELETE_ADDRESS") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteId(row.addressId);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -177,10 +178,12 @@ const ClientAddresses: FC<ClientAddressesProps> = ({ clientId }) => {
           <MapPin className="h-5 w-5" />
           {t("clients.addresses.title")}
         </h3>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="mr-1 h-4 w-4" />
-          {t("clients.addresses.addAddress")}
-        </Button>
+        {hasPermission("CREATE_ADDRESS") && (
+          <Button onClick={openCreate} size="sm">
+            <Plus className="mr-1 h-4 w-4" />
+            {t("clients.addresses.addAddress")}
+          </Button>
+        )}
       </div>
       <Card>
         <CardContent className="p-0">
@@ -189,7 +192,10 @@ const ClientAddresses: FC<ClientAddressesProps> = ({ clientId }) => {
             data={addresses ?? []}
             loading={isLoading}
             minWidth={600}
-            emptyState={{ icon: <MapPin className="h-8 w-8 text-gray-300" />, message: t("clients.addresses.noAddresses") }}
+            emptyState={{
+              icon: <MapPin className="h-8 w-8 text-gray-300" />,
+              message: t("clients.addresses.noAddresses"),
+            }}
           />
         </CardContent>
       </Card>
@@ -197,7 +203,9 @@ const ClientAddresses: FC<ClientAddressesProps> = ({ clientId }) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingAddressId ? t("clients.addresses.editAddress") : t("clients.addresses.addAddress")}</DialogTitle>
+            <DialogTitle>
+              {editingAddressId ? t("clients.addresses.editAddress") : t("clients.addresses.addAddress")}
+            </DialogTitle>
             <DialogDescription>{t("clients.addresses.enterDetails")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

@@ -22,6 +22,7 @@ import {
   useUpdateClientFamilyMember,
   useDeleteClientFamilyMember,
 } from "../hooks/useClientFamilyMembers";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { ClientFamilyMember } from "../api/family-members";
 
 const familyMemberSchema = z.object({
@@ -42,6 +43,7 @@ interface ClientFamilyMembersProps {
 
 const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
   const { t } = useTranslation();
+  const { hasPermission } = useClientPermissions();
   const { data: members, isLoading } = useClientFamilyMembers(clientId);
   const { data: template } = useClientFamilyMemberTemplate(clientId);
   const createMutation = useCreateClientFamilyMember();
@@ -138,7 +140,11 @@ const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
       header: t("clients.familyMembers.gender"),
       accessorFn: (row) => <span className="text-sm">{row.gender?.name ?? row.gender?.value ?? "—"}</span>,
     },
-    { key: "age", header: t("clients.familyMembers.age"), accessorFn: (row) => <span className="text-sm">{row.age ?? "—"}</span> },
+    {
+      key: "age",
+      header: t("clients.familyMembers.age"),
+      accessorFn: (row) => <span className="text-sm">{row.age ?? "—"}</span>,
+    },
     {
       key: "isDependent",
       header: t("clients.familyMembers.dependent"),
@@ -161,26 +167,30 @@ const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
       header: t("clients.familyMembers.actions"),
       accessorFn: (row) => (
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              openEdit(row);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteId(row.id);
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
+          {hasPermission("READ_FAMILYMEMBER") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                openEdit(row);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {hasPermission("READ_FAMILYMEMBER") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteId(row.id);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -193,10 +203,12 @@ const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
           <Users className="h-5 w-5" />
           {t("clients.familyMembers.title")}
         </h3>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="mr-1 h-4 w-4" />
-          {t("clients.familyMembers.addMember")}
-        </Button>
+        {hasPermission("READ_FAMILYMEMBER") && (
+          <Button onClick={openCreate} size="sm">
+            <Plus className="mr-1 h-4 w-4" />
+            {t("clients.familyMembers.addMember")}
+          </Button>
+        )}
       </div>
       <Card>
         <CardContent className="p-0">
@@ -205,7 +217,10 @@ const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
             data={members ?? []}
             loading={isLoading}
             minWidth={700}
-            emptyState={{ icon: <Users className="h-8 w-8 text-gray-300" />, message: t("clients.familyMembers.noMembers") }}
+            emptyState={{
+              icon: <Users className="h-8 w-8 text-gray-300" />,
+              message: t("clients.familyMembers.noMembers"),
+            }}
           />
         </CardContent>
       </Card>
@@ -213,7 +228,9 @@ const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingId ? t("clients.familyMembers.editMember") : t("clients.familyMembers.addMember")}</DialogTitle>
+            <DialogTitle>
+              {editingId ? t("clients.familyMembers.editMember") : t("clients.familyMembers.addMember")}
+            </DialogTitle>
             <DialogDescription>{t("clients.familyMembers.enterDetails")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

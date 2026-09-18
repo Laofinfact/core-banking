@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClientNotes, useCreateClientNote, useUpdateClientNote, useDeleteClientNote } from "../hooks/useClientNotes";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import { formatClientDate } from "../utils/client";
 import { useTranslation } from "react-i18next";
 
@@ -21,6 +22,7 @@ interface ClientNotesProps {
 
 const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
   const { t } = useTranslation();
+  const { hasPermission } = useClientPermissions();
   const { data: notes, isLoading } = useClientNotes(clientId);
   const createMutation = useCreateClientNote();
   const updateMutation = useUpdateClientNote();
@@ -79,10 +81,12 @@ const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
           <StickyNote className="h-5 w-5" />
           {t("clients.notes.title")}
         </h3>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="mr-1 h-4 w-4" />
-          {t("clients.notes.addNote")}
-        </Button>
+        {hasPermission("CREATE_NOTE") && (
+          <Button onClick={openCreate} size="sm">
+            <Plus className="mr-1 h-4 w-4" />
+            {t("clients.notes.addNote")}
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -113,12 +117,16 @@ const ClientNotes: FC<ClientNotesProps> = ({ clientId }) => {
                     </p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(note)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteId(note.id)}>
-                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                    </Button>
+                    {hasPermission("UPDATE_NOTE") && (
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(note)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {hasPermission("DELETE_NOTE") && (
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteId(note.id)}>
+                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

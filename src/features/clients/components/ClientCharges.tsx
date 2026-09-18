@@ -22,6 +22,7 @@ import {
   useWaiveClientCharge,
   useDeleteClientCharge,
 } from "../hooks/useClientCharges";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import { useCharges } from "@/features/charges/hooks/useCharges";
 import type { ClientCharge, PostClientChargeRequest } from "../api/charges";
 import { formatClientDate } from "../utils/client";
@@ -43,6 +44,7 @@ interface ClientChargesProps {
 
 const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
   const { t } = useTranslation();
+  const { hasPermission } = useClientPermissions();
   const { data: chargesData, isLoading } = useClientCharges(clientId);
   const { data: globalCharges } = useCharges();
   const createMutation = useCreateClientCharge();
@@ -173,7 +175,7 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
       header: t("clients.charges.actions"),
       accessorFn: (row) => (
         <div className="flex items-center gap-1">
-          {!row.isPaid && !row.isWaived && (
+          {!row.isPaid && !row.isWaived && hasPermission("PAY_CHARGE") && (
             <Button
               variant="ghost"
               size="sm"
@@ -186,7 +188,7 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             </Button>
           )}
-          {!row.isPaid && !row.isWaived && row.waiverable && (
+          {!row.isPaid && !row.isWaived && row.waiverable && hasPermission("WAIVE_CHARGE") && (
             <Button
               variant="ghost"
               size="sm"
@@ -199,7 +201,7 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
               <Ban className="h-4 w-4 text-amber-500" />
             </Button>
           )}
-          {!row.isPaid && (
+          {!row.isPaid && hasPermission("DELETE_CHARGE") && (
             <Button
               variant="ghost"
               size="sm"
@@ -223,10 +225,12 @@ const ClientCharges: FC<ClientChargesProps> = ({ clientId }) => {
           <Receipt className="h-5 w-5" />
           {t("clients.charges.title")}
         </h3>
-        <Button onClick={openCreate} size="sm" disabled={clientChargeOptions.length === 0}>
-          <Plus className="mr-1 h-4 w-4" />
-          {t("clients.charges.applyCharge")}
-        </Button>
+        {hasPermission("CREATE_CHARGE") && (
+          <Button onClick={openCreate} size="sm" disabled={clientChargeOptions.length === 0}>
+            <Plus className="mr-1 h-4 w-4" />
+            {t("clients.charges.applyCharge")}
+          </Button>
+        )}
       </div>
       <Card>
         <CardContent className="p-0">

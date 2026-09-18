@@ -206,6 +206,10 @@ export type { ClientImageParams, ClientImageCreateResponse, ClientUploadTemplate
 export { fetchClientObligeeDetails } from "./api/obligee";
 export type { ClientObligeeDetailsResponse } from "./api/obligee";
 
+// Hooks — Permissions
+export { useClientPermissions, CLIENT_ACTION_PERMISSIONS } from "./hooks/useClientPermissions";
+export type { ClientAction } from "./hooks/useClientPermissions";
+
 // Hooks
 export { useClients, useClientPages, clientKeys } from "./hooks/useClients";
 export { useClient } from "./hooks/useClient";

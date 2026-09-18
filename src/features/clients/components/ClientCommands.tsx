@@ -37,6 +37,7 @@ import {
   useRejectClientTransfer,
   useWithdrawClientTransfer,
 } from "../hooks/useClientTransfer";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { ClientTemplate } from "../types/client";
 import {
   rejectClientSchema,
@@ -78,6 +79,7 @@ const ClientCommands: FC<ClientCommandsProps> = ({
 }) => {
   const { t } = useTranslation();
   const today = new Date().toISOString().split("T")[0];
+  const { hasPermission } = useClientPermissions();
 
   const rejectMutation = useRejectClient();
   const withdrawMutation = useWithdrawClient();
@@ -97,15 +99,30 @@ const ClientCommands: FC<ClientCommandsProps> = ({
 
   const rejectForm = useForm<RejectClientFormValues>({
     resolver: zodResolver(rejectClientSchema),
-    defaultValues: { rejectionDate: today, rejectionReasonId: undefined as unknown as number, dateFormat: "yyyy-MM-dd", locale: "en" },
+    defaultValues: {
+      rejectionDate: today,
+      rejectionReasonId: undefined as unknown as number,
+      dateFormat: "yyyy-MM-dd",
+      locale: "en",
+    },
   });
   const withdrawForm = useForm<WithdrawClientFormValues>({
     resolver: zodResolver(withdrawClientSchema),
-    defaultValues: { withdrawalDate: today, withdrawalReasonId: undefined as unknown as number, dateFormat: "yyyy-MM-dd", locale: "en" },
+    defaultValues: {
+      withdrawalDate: today,
+      withdrawalReasonId: undefined as unknown as number,
+      dateFormat: "yyyy-MM-dd",
+      locale: "en",
+    },
   });
   const closeForm = useForm<CloseClientFormValues>({
     resolver: zodResolver(closeClientSchema),
-    defaultValues: { closureDate: today, closureReasonId: undefined as unknown as number, dateFormat: "yyyy-MM-dd", locale: "en" },
+    defaultValues: {
+      closureDate: today,
+      closureReasonId: undefined as unknown as number,
+      dateFormat: "yyyy-MM-dd",
+      locale: "en",
+    },
   });
   const reactivateForm = useForm<ReactivateClientFormValues>({
     resolver: zodResolver(reactivateClientSchema),
@@ -302,7 +319,7 @@ const ClientCommands: FC<ClientCommandsProps> = ({
     <>
       <div className="flex flex-wrap items-center gap-2">
         {/* Lifecycle commands */}
-        {isPending && (
+        {isPending && hasPermission("REJECT") && (
           <>
             <Button
               variant="outline"
@@ -324,25 +341,25 @@ const ClientCommands: FC<ClientCommandsProps> = ({
             </Button>
           </>
         )}
-        {isActive && (
+        {isActive && hasPermission("CLOSE") && (
           <Button variant="outline" size="sm" onClick={() => setDialog("close")} className="text-gray-600">
             <LogOut className="mr-1 h-4 w-4" />
             {t("clients.commands.close")}
           </Button>
         )}
-        {isClosed && (
+        {isClosed && hasPermission("REACTIVATE") && (
           <Button variant="outline" size="sm" onClick={() => setDialog("reactivate")}>
             <Power className="mr-1 h-4 w-4" />
             {t("clients.commands.reactivate")}
           </Button>
         )}
-        {isRejected && (
+        {isRejected && hasPermission("UNDO_REJECT") && (
           <Button variant="outline" size="sm" onClick={() => setDialog("undoreject")}>
             <Undo2 className="mr-1 h-4 w-4" />
             {t("clients.commands.undoReject")}
           </Button>
         )}
-        {isWithdrawn && (
+        {isWithdrawn && hasPermission("UNDO_WITHDRAWAL") && (
           <Button variant="outline" size="sm" onClick={() => setDialog("undowithdraw")}>
             <RotateCcw className="mr-1 h-4 w-4" />
             {t("clients.commands.undoWithdraw")}
@@ -350,13 +367,13 @@ const ClientCommands: FC<ClientCommandsProps> = ({
         )}
 
         {/* Staff commands */}
-        {isActive && (
+        {isActive && hasPermission("ASSIGN_STAFF") && (
           <>
             <Button variant="outline" size="sm" onClick={() => setStaffDialogOpen(true)}>
               <UserPlus className="mr-1 h-4 w-4" />
               {currentStaffId ? t("clients.commands.changeStaff") : t("clients.commands.assignStaff")}
             </Button>
-            {currentStaffId && (
+            {currentStaffId && hasPermission("UNASSIGN_STAFF") && (
               <Button
                 variant="outline"
                 size="sm"
@@ -372,7 +389,7 @@ const ClientCommands: FC<ClientCommandsProps> = ({
         )}
 
         {/* Savings account command */}
-        {isActive && (
+        {isActive && hasPermission("UPDATE_SAVINGS_ACCOUNT") && (
           <Button variant="outline" size="sm" onClick={() => setSavingsDialogOpen(true)}>
             <PiggyBank className="mr-1 h-4 w-4" />
             {t("clients.commands.updateSavings")}
@@ -380,7 +397,7 @@ const ClientCommands: FC<ClientCommandsProps> = ({
         )}
 
         {/* Transfer commands */}
-        {isActive && !isTransferInProgress && (
+        {isActive && !isTransferInProgress && hasPermission("PROPOSE_TRANSFER") && (
           <Button variant="outline" size="sm" onClick={() => setDialog("proposeTransfer")}>
             <ArrowLeftRight className="mr-1 h-4 w-4" />
             {t("clients.commands.proposeTransfer")}
@@ -388,36 +405,42 @@ const ClientCommands: FC<ClientCommandsProps> = ({
         )}
         {isTransferInProgress && (
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDialog("acceptTransfer")}
-              className="text-emerald-600"
-              disabled={anyLoading}
-            >
-              <CheckCircle2 className="mr-1 h-4 w-4" />
-              {t("clients.commands.acceptTransfer")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDialog("rejectTransfer")}
-              className="text-red-600"
-              disabled={anyLoading}
-            >
-              <XCircle className="mr-1 h-4 w-4" />
-              {t("clients.commands.rejectTransfer")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDialog("withdrawTransfer")}
-              className="text-amber-600"
-              disabled={anyLoading}
-            >
-              <Ban className="mr-1 h-4 w-4" />
-              {t("clients.commands.withdrawTransfer")}
-            </Button>
+            {hasPermission("ACCEPT_TRANSFER") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDialog("acceptTransfer")}
+                className="text-emerald-600"
+                disabled={anyLoading}
+              >
+                <CheckCircle2 className="mr-1 h-4 w-4" />
+                {t("clients.commands.acceptTransfer")}
+              </Button>
+            )}
+            {hasPermission("REJECT_TRANSFER") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDialog("rejectTransfer")}
+                className="text-red-600"
+                disabled={anyLoading}
+              >
+                <XCircle className="mr-1 h-4 w-4" />
+                {t("clients.commands.rejectTransfer")}
+              </Button>
+            )}
+            {hasPermission("WITHDRAW_TRANSFER") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDialog("withdrawTransfer")}
+                className="text-amber-600"
+                disabled={anyLoading}
+              >
+                <Ban className="mr-1 h-4 w-4" />
+                {t("clients.commands.withdrawTransfer")}
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -525,9 +548,7 @@ const ClientCommands: FC<ClientCommandsProps> = ({
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="block text-sm font-medium">{t("clients.commands.closureReason")} *</label>
-              <Select
-                onValueChange={(v) => closeForm.setValue("closureReasonId", Number(v), { shouldValidate: true })}
-              >
+              <Select onValueChange={(v) => closeForm.setValue("closureReasonId", Number(v), { shouldValidate: true })}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("clients.commands.selectReason")} />
                 </SelectTrigger>
@@ -602,7 +623,9 @@ const ClientCommands: FC<ClientCommandsProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("clients.commands.undoWithdraw")}</DialogTitle>
-            <DialogDescription>{t("clients.commands.undoWithdrawDescription", { name: displayName })}</DialogDescription>
+            <DialogDescription>
+              {t("clients.commands.undoWithdrawDescription", { name: displayName })}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={undoWithdrawForm.handleSubmit(handleUndoWithdraw)} className="space-y-4">
             <div className="flex flex-col gap-1.5">
@@ -624,7 +647,9 @@ const ClientCommands: FC<ClientCommandsProps> = ({
       <Dialog open={staffDialogOpen} onOpenChange={setStaffDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{currentStaffId ? t("clients.commands.changeStaff") : t("clients.commands.assignStaff")}</DialogTitle>
+            <DialogTitle>
+              {currentStaffId ? t("clients.commands.changeStaff") : t("clients.commands.assignStaff")}
+            </DialogTitle>
             <DialogDescription>{t("clients.commands.assignStaffDescription", { name: displayName })}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -717,7 +742,11 @@ const ClientCommands: FC<ClientCommandsProps> = ({
               <label className="block text-sm font-medium" htmlFor="transferNote">
                 {t("clients.commands.note")}
               </label>
-              <Input id="transferNote" {...transferForm.register("note")} placeholder={t("clients.commands.optionalNote")} />
+              <Input
+                id="transferNote"
+                {...transferForm.register("note")}
+                placeholder={t("clients.commands.optionalNote")}
+              />
             </div>
             <Button
               type="submit"
@@ -735,7 +764,9 @@ const ClientCommands: FC<ClientCommandsProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("clients.commands.acceptTransfer")}</DialogTitle>
-            <DialogDescription>{t("clients.commands.acceptTransferDescription", { name: displayName })}</DialogDescription>
+            <DialogDescription>
+              {t("clients.commands.acceptTransferDescription", { name: displayName })}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={acceptTransferForm.handleSubmit(handleAcceptTransfer)} className="space-y-4">
             <div className="flex flex-col gap-1.5">
@@ -748,7 +779,11 @@ const ClientCommands: FC<ClientCommandsProps> = ({
               <label className="block text-sm font-medium" htmlFor="acceptTransferNote">
                 {t("clients.commands.note")}
               </label>
-              <Input id="acceptTransferNote" {...acceptTransferForm.register("note")} placeholder={t("clients.commands.optionalNote")} />
+              <Input
+                id="acceptTransferNote"
+                {...acceptTransferForm.register("note")}
+                placeholder={t("clients.commands.optionalNote")}
+              />
             </div>
             <Button type="submit" disabled={acceptTransferMutation.isPending}>
               {acceptTransferMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -763,7 +798,9 @@ const ClientCommands: FC<ClientCommandsProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("clients.commands.rejectTransfer")}</DialogTitle>
-            <DialogDescription>{t("clients.commands.rejectTransferDescription", { name: displayName })}</DialogDescription>
+            <DialogDescription>
+              {t("clients.commands.rejectTransferDescription", { name: displayName })}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={rejectTransferForm.handleSubmit(handleRejectTransfer)} className="space-y-4">
             <div className="flex flex-col gap-1.5">
@@ -776,7 +813,11 @@ const ClientCommands: FC<ClientCommandsProps> = ({
               <label className="block text-sm font-medium" htmlFor="rejectTransferNote">
                 {t("clients.commands.note")}
               </label>
-              <Input id="rejectTransferNote" {...rejectTransferForm.register("note")} placeholder={t("clients.commands.optionalNote")} />
+              <Input
+                id="rejectTransferNote"
+                {...rejectTransferForm.register("note")}
+                placeholder={t("clients.commands.optionalNote")}
+              />
             </div>
             <Button type="submit" disabled={rejectTransferMutation.isPending} variant="destructive">
               {rejectTransferMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -791,7 +832,9 @@ const ClientCommands: FC<ClientCommandsProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("clients.commands.withdrawTransfer")}</DialogTitle>
-            <DialogDescription>{t("clients.commands.withdrawTransferDescription", { name: displayName })}</DialogDescription>
+            <DialogDescription>
+              {t("clients.commands.withdrawTransferDescription", { name: displayName })}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={withdrawTransferForm.handleSubmit(handleWithdrawTransfer)} className="space-y-4">
             <div className="flex flex-col gap-1.5">
@@ -804,7 +847,11 @@ const ClientCommands: FC<ClientCommandsProps> = ({
               <label className="block text-sm font-medium" htmlFor="withdrawTransferNote">
                 {t("clients.commands.note")}
               </label>
-              <Input id="withdrawTransferNote" {...withdrawTransferForm.register("note")} placeholder={t("clients.commands.optionalNote")} />
+              <Input
+                id="withdrawTransferNote"
+                {...withdrawTransferForm.register("note")}
+                placeholder={t("clients.commands.optionalNote")}
+              />
             </div>
             <Button type="submit" disabled={withdrawTransferMutation.isPending} variant="destructive">
               {withdrawTransferMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

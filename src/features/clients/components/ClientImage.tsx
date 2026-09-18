@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useClientImage, useUploadClientImage, useDeleteClientImage } from "../hooks/useClientImages";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { Client } from "../types/client";
 
 const ACCEPTED_TYPES = ["image/gif", "image/jpeg", "image/png"];
@@ -23,6 +24,7 @@ const sizeMap = {
 
 const ClientImage: FC<ClientImageProps> = ({ client, size = "md" }) => {
   const { t } = useTranslation();
+  const { hasPermission } = useClientPermissions();
   const { data: imageDataUrl, isLoading } = useClientImage(client.imagePresent ? client.id : undefined);
   const uploadMutation = useUploadClientImage();
   const deleteMutation = useDeleteClientImage();
@@ -58,11 +60,12 @@ const ClientImage: FC<ClientImageProps> = ({ client, size = "md" }) => {
   }, [deleteMutation, client.id]);
 
   const openDialog = useCallback(() => {
+    if (!hasPermission("READ_IMAGE") && !hasPermission("CREATE_IMAGE")) return;
     setPreviewUrl(null);
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setDialogOpen(true);
-  }, []);
+  }, [hasPermission]);
 
   const closeDialog = useCallback(() => {
     setDialogOpen(false);
@@ -118,17 +121,19 @@ const ClientImage: FC<ClientImageProps> = ({ client, size = "md" }) => {
                   </AvatarFallback>
                 )}
               </Avatar>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_TYPES.join(",")}
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-[#D32F2F] hover:file:bg-red-100 cursor-pointer"
-              />
+              {hasPermission("CREATE_IMAGE") && (
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ACCEPTED_TYPES.join(",")}
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-[#D32F2F] hover:file:bg-red-100 cursor-pointer"
+                />
+              )}
               <p className="text-xs text-gray-400">{t("clients.image.acceptedFormats")}: GIF, JPEG, PNG</p>
             </div>
             <div className="flex items-center justify-between gap-2">
-              {hasImage && (
+              {hasImage && hasPermission("DELETE_IMAGE") && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -143,15 +148,17 @@ const ClientImage: FC<ClientImageProps> = ({ client, size = "md" }) => {
                 <Button variant="outline" size="sm" onClick={closeDialog}>
                   {t("clients.image.cancel")}
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handleUpload}
-                  disabled={!selectedFile || uploadMutation.isPending}
-                  className="bg-[#D32F2F] hover:bg-red-700"
-                >
-                  {uploadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {t("clients.image.upload")}
-                </Button>
+                {hasPermission("CREATE_IMAGE") && (
+                  <Button
+                    size="sm"
+                    onClick={handleUpload}
+                    disabled={!selectedFile || uploadMutation.isPending}
+                    className="bg-[#D32F2F] hover:bg-red-700"
+                  >
+                    {uploadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t("clients.image.upload")}
+                  </Button>
+                )}
               </div>
             </div>
           </div>

@@ -18,6 +18,7 @@ import {
   useDeleteClientDocument,
   useUpdateClientDocument,
 } from "../hooks/useClientDocuments";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { ClientDocument } from "../api/documents";
 import { downloadClientDocument } from "../api/documents";
 
@@ -41,6 +42,7 @@ interface ClientDocumentsProps {
 
 const ClientDocuments: FC<ClientDocumentsProps> = ({ clientId }) => {
   const { t } = useTranslation();
+  const { hasPermission } = useClientPermissions();
   const { data: documents, isLoading } = useClientDocuments(clientId);
   const createMutation = useCreateClientDocument();
   const updateMutation = useUpdateClientDocument();
@@ -122,14 +124,26 @@ const ClientDocuments: FC<ClientDocumentsProps> = ({ clientId }) => {
   );
 
   const columns: ColumnDef<ClientDocument>[] = [
-    { key: "name", header: t("clients.documents.name"), accessorFn: (row) => <span className="text-sm font-medium">{row.name}</span> },
+    {
+      key: "name",
+      header: t("clients.documents.name"),
+      accessorFn: (row) => <span className="text-sm font-medium">{row.name}</span>,
+    },
     {
       key: "fileName",
       header: t("clients.documents.fileName"),
       accessorFn: (row) => <span className="text-sm font-mono">{row.fileName ?? "—"}</span>,
     },
-    { key: "size", header: t("clients.documents.size"), accessorFn: (row) => <span className="text-sm">{formatFileSize(row.size)}</span> },
-    { key: "type", header: t("clients.documents.type"), accessorFn: (row) => <span className="text-sm">{row.type ?? "—"}</span> },
+    {
+      key: "size",
+      header: t("clients.documents.size"),
+      accessorFn: (row) => <span className="text-sm">{formatFileSize(row.size)}</span>,
+    },
+    {
+      key: "type",
+      header: t("clients.documents.type"),
+      accessorFn: (row) => <span className="text-sm">{row.type ?? "—"}</span>,
+    },
     {
       key: "description",
       header: t("clients.documents.description"),
@@ -140,37 +154,47 @@ const ClientDocuments: FC<ClientDocumentsProps> = ({ clientId }) => {
       header: t("clients.documents.actions"),
       accessorFn: (row) => (
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDownload(row);
-            }}
-            disabled={downloadingId === row.id}
-          >
-            {downloadingId === row.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              openEdit(row);
-            }}
-          >
-            <FileText className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteId(row.id);
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
+          {hasPermission("READ_DOCUMENT") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownload(row);
+              }}
+              disabled={downloadingId === row.id}
+            >
+              {downloadingId === row.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+          {hasPermission("UPDATE_DOCUMENT") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                openEdit(row);
+              }}
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+          )}
+          {hasPermission("DELETE_DOCUMENT") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteId(row.id);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -183,10 +207,12 @@ const ClientDocuments: FC<ClientDocumentsProps> = ({ clientId }) => {
           <FileText className="h-5 w-5" />
           {t("clients.documents.title")}
         </h3>
-        <Button onClick={openCreate} size="sm">
-          <Upload className="mr-1 h-4 w-4" />
-          {t("clients.documents.uploadDocument")}
-        </Button>
+        {hasPermission("CREATE_DOCUMENT") && (
+          <Button onClick={openCreate} size="sm">
+            <Upload className="mr-1 h-4 w-4" />
+            {t("clients.documents.uploadDocument")}
+          </Button>
+        )}
       </div>
       <Card>
         <CardContent className="p-0">
@@ -195,7 +221,10 @@ const ClientDocuments: FC<ClientDocumentsProps> = ({ clientId }) => {
             data={documents ?? []}
             loading={isLoading}
             minWidth={700}
-            emptyState={{ icon: <FileText className="h-8 w-8 text-gray-300" />, message: t("clients.documents.noDocuments") }}
+            emptyState={{
+              icon: <FileText className="h-8 w-8 text-gray-300" />,
+              message: t("clients.documents.noDocuments"),
+            }}
           />
         </CardContent>
       </Card>
@@ -203,7 +232,9 @@ const ClientDocuments: FC<ClientDocumentsProps> = ({ clientId }) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingDoc ? t("clients.documents.editDocument") : t("clients.documents.uploadDocument")}</DialogTitle>
+            <DialogTitle>
+              {editingDoc ? t("clients.documents.editDocument") : t("clients.documents.uploadDocument")}
+            </DialogTitle>
             <DialogDescription>
               {editingDoc ? t("clients.documents.updateMetadata") : t("clients.documents.uploadDescription")}
             </DialogDescription>

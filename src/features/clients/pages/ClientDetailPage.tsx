@@ -50,6 +50,7 @@ import ClientTransactions from "../components/ClientTransactions";
 import ClientImage from "../components/ClientImage";
 import ClientObligeeDetails from "../components/ClientObligeeDetails";
 import { getClientStatus, getClientDisplayName } from "../utils/client";
+import { useClientPermissions } from "../hooks/useClientPermissions";
 import type { ClientLoanAccount, ClientSavingsAccount } from "../api/client";
 import { useTranslation } from "react-i18next";
 
@@ -60,6 +61,7 @@ const ClientDetailPage: FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { hasPermission } = useClientPermissions();
   const { data: client, isLoading, isError, refetch } = useClient(id);
   const { data: template } = useClientTemplate();
   const { data: closeTemplate } = useClientTemplate("close");
@@ -158,7 +160,7 @@ const ClientDetailPage: FC = () => {
                   currentStaffId={client.staffId}
                   onSuccess={() => refetch()}
                 />
-                {isPending && (
+                {isPending && hasPermission("ACTIVATE") && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -169,14 +171,22 @@ const ClientDetailPage: FC = () => {
                     {t("Activate")}
                   </Button>
                 )}
-                 <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/collaterals-management`)}>
-                   <ShieldCheck className="mr-1 h-4 w-4" />
-                   {t("Collateral Management")}
-                 </Button>
-                 <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/edit`)}>
-                   <Pencil className="mr-1 h-4 w-4" />
-                   {t("Edit")}
-                 </Button>
+                {hasPermission("READ_COLLATERAL") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/clients/${client.id}/collaterals-management`)}
+                  >
+                    <ShieldCheck className="mr-1 h-4 w-4" />
+                    {t("Collateral Management")}
+                  </Button>
+                )}
+                {hasPermission("UPDATE") && (
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/edit`)}>
+                    <Pencil className="mr-1 h-4 w-4" />
+                    {t("Edit")}
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/calendars`)}>
                   <Calendar className="mr-1 h-4 w-4" />
                   {t("Calendars")}
@@ -185,7 +195,7 @@ const ClientDetailPage: FC = () => {
                   <CalendarClock className="mr-1 h-4 w-4" />
                   {t("Meetings")}
                 </Button>
-                {isPending && (
+                {isPending && hasPermission("DELETE") && (
                   <Button
                     variant="outline"
                     size="sm"
