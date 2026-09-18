@@ -1,6 +1,5 @@
 export type {
   PaymentType,
-  PaymentTypeListResponse,
   PaymentTypeCreateRequest,
   PaymentTypeUpdateRequest,
 } from "./api/payment-types";

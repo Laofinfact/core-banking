@@ -19,7 +19,7 @@ const PaymentTypeListPage: React.FC = () => {
 
   const { data, isLoading, isError, refetch, isRefetching } = usePaymentTypes();
 
-  const paymentTypes = useMemo(() => data?.pageItems ?? [], [data]);
+  const paymentTypes = useMemo(() => data ?? [], [data]);
 
   const deleteMutation = useDeletePaymentType();
 

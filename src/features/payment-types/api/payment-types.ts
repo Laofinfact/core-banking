@@ -10,17 +10,13 @@ export interface PaymentType {
   isSystemDefined: boolean;
 }
 
-export interface PaymentTypeListResponse {
-  pageItems: PaymentType[];
-  totalFilteredRecords: number;
-}
-
 export interface PaymentTypeCreateRequest {
   name: string;
   description?: string;
   isCashPayment: boolean;
   position: number;
   codeName?: string;
+  isSystemDefined?: boolean;
 }
 
 export interface PaymentTypeUpdateRequest {
@@ -29,13 +25,14 @@ export interface PaymentTypeUpdateRequest {
   isCashPayment: boolean;
   position: number;
   codeName?: string;
+  isSystemDefined?: boolean;
 }
 
 export async function fetchPaymentTypes(
   params?: { onlyWithCode?: boolean },
-): Promise<PaymentTypeListResponse> {
-  const { data } = await client.get<PaymentTypeListResponse>("/paymenttypes", { params });
-  return data;
+): Promise<PaymentType[]> {
+  const { data } = await client.get<PaymentType[]>("/paymenttypes", { params });
+  return Array.isArray(data) ? data : [];
 }
 
 export async function fetchPaymentType(id: number): Promise<PaymentType> {

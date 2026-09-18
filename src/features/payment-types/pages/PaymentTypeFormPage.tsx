@@ -16,10 +16,11 @@ import { usePaymentType, useCreatePaymentType, useUpdatePaymentType } from "../h
 
 const paymentTypeFormSchema = z.object({
   name: z.string().min(1, "Name is required."),
-  description: z.string().optional(),
+  description: z.string().max(500, "Description must be 500 characters or less.").optional(),
   isCashPayment: z.boolean(),
-  position: z.number(),
-  codeName: z.string().optional(),
+  position: z.number().min(0, "Position must be zero or positive."),
+  codeName: z.string().max(100, "Code name must be 100 characters or less.").optional(),
+  isSystemDefined: z.boolean().optional(),
 });
 
 type PaymentTypeFormValues = z.infer<typeof paymentTypeFormSchema>;
@@ -52,6 +53,7 @@ const PaymentTypeFormPage: FC = () => {
           isCashPayment: existing.isCashPayment,
           position: existing.position,
           codeName: existing.codeName ?? "",
+          isSystemDefined: existing.isSystemDefined,
         }
       : undefined,
     defaultValues: {
@@ -60,6 +62,7 @@ const PaymentTypeFormPage: FC = () => {
       isCashPayment: false,
       position: 0,
       codeName: "",
+      isSystemDefined: false,
     },
   });
 
@@ -71,6 +74,7 @@ const PaymentTypeFormPage: FC = () => {
         isCashPayment: values.isCashPayment,
         position: values.position,
         codeName: values.codeName?.trim() || undefined,
+        isSystemDefined: values.isSystemDefined ?? false,
       };
 
       if (isEdit) {
