@@ -137,7 +137,7 @@ export {
   updateSavingsProduct,
   deleteSavingsProduct,
 } from "./api/deposit";
-export type { SavingsProductTemplate, GLOption, AccountingMappingOptions, FixedDepositProductTemplate } from "./api/deposit";
+export type { SavingsProductTemplate, GLOption, AccountingMappingOptions } from "./api/deposit";
 
 export { useSavingsAccounts, useSavingsAccount, depositKeys } from "./hooks/useSavingsAccounts";
 

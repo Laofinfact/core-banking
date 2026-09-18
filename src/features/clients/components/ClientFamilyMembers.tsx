@@ -107,7 +107,7 @@ const ClientFamilyMembers: FC<ClientFamilyMembersProps> = ({ clientId }) => {
       if (editingId) {
         await updateMutation.mutateAsync({ clientId, familyMemberId: editingId, payload });
       } else {
-        await createMutation.mutateAsync({ clientId, payload: payload as Record<string, unknown> });
+        await createMutation.mutateAsync({ clientId, payload });
       }
       setDialogOpen(false);
     },

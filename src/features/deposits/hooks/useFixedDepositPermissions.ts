@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useAuthStore } from "@/store";
+import { hasPermission as hasPermissionCode } from "@/lib/permissions";
 
 export type FixedDepositAction =
   | "CREATE"
@@ -39,7 +40,7 @@ export function useFixedDepositPermissions() {
     (action: FixedDepositAction) => {
       const code = FIXED_DEPOSIT_ACTION_PERMISSIONS[action];
 
-      return permissions.includes(code);
+      return hasPermissionCode(permissions, code);
     },
     [permissions],
   );

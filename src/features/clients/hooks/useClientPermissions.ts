@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useAuthStore } from "@/store";
+import { hasPermission as hasPermissionCode } from "@/lib/permissions";
 
 export type ClientAction =
   | "READ"
@@ -112,7 +113,7 @@ export function useClientPermissions() {
   const hasPermission = useCallback(
     (action: ClientAction) => {
       const code = CLIENT_ACTION_PERMISSIONS[action];
-      return permissions.includes(code);
+      return hasPermissionCode(permissions, code);
     },
     [permissions],
   );
